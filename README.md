@@ -1,6 +1,4 @@
-# Level 4 Project 
-
-Andrew Parry *2393265p*
+# Level 4 Project | Andrew Parry 2393265p
 
 **Supervisor:** Debasis Ganguly
 
