@@ -11,6 +11,7 @@ TODO:
 Latent Modifiction??
     MLP | Can it be used here
 """
+
 import typing
 from typing import Tuple
 from typing import Any
