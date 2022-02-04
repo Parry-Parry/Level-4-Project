@@ -1,4 +1,4 @@
-import Tensorflow as tf
+import tensorflow as tf
 
 class ShapeChecker():
   def __init__(self):

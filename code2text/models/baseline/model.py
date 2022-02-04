@@ -11,13 +11,14 @@ TODO:
 Latent Modifiction??
     MLP | Can it be used here
 """
+from base64 import encode
 import typing
 from typing import Tuple
 from typing import Any
 
-import Tensorflow as tf
+import tensorflow as tf
 
-from model import ShapeChecker
+from code2text.helper.model import ShapeChecker
 
 """
 ## CONTAINERS ##
@@ -104,10 +105,8 @@ class Encoder(tf.keras.layers.Layer):
         self.batch_size = batch_size
         self.embedding = tf.keras.layers.Embedding(vocab_size, hidden_dim)
 
-        self.gru = tf.keras.layers.GRU(self.enc_units,
-                                   return_sequences=True,
-                                   return_state=True,
-                                   recurrent_initializer='glorot_uniform')
+        cells = [tf.keras.layers.GRU(units, return_sequences=True, return_state=True, recurrent_initializer='glorot_uniform') for units in encode_units]
+        self.gru = tf.compat.v1.nn.rnn_cell.MultiRNNCell(cells)
         
     def call(self, tokens, state=None):
         shape_checker = ShapeChecker()
@@ -130,10 +129,8 @@ class Decoder(tf.keras.layers.Layer):
         self.batch_size = batch_size
         self.embedding = tf.keras.layers.Embedding(self.out_vocab_size, hidden_dim)
 
-        self.gru = tf.keras.layers.GRU(self.enc_units,
-                                   return_sequences=True,
-                                   return_state=True,
-                                   recurrent_initializer='glorot_uniform')
+        cells = [tf.contrib.cudnn_rnn.CudnnGRU(units, return_sequences=True, return_state=True, recurrent_initializer='glorot_uniform') for units in decode_units]
+        self.gru = tf.compat.v1.nn.rnn_cell.MultiRNNCell(cells)
 
         self.attention = Attention(self.units)
         self.convert = tf.keras.layers.Dense(self.units, activation=tf.math.tanh,
@@ -259,9 +256,14 @@ class seq2seqTrain(tf.keras.Model):
 
             return {'batch_loss': average_loss}
 
-
-    def train_step(self, inputs):
+    @tf.function(input_signature=[[tf.TensorSpec(dtype=tf.string, shape=[None]),
+                               tf.TensorSpec(dtype=tf.string, shape=[None])]])
+    def _tf_train_step(self, inputs):
         return self._train_step(inputs)
+    
+    def train_step(self, inputs):
+        return self._tf_train_step(inputs)
+
 
 
     
