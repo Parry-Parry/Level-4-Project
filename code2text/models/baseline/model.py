@@ -99,14 +99,12 @@ class MaskedLoss(tf.keras.losses.Loss):
 """
 
 class Encoder(tf.keras.layers.Layer):
-    def __init__(self, vocab_size, encode_units, batch_size, hidden_dim=300) -> None:
+    def __init__(self, vocab_size, hidden_dim, encode_units) -> None:
         super(Encoder, self).__init__()
         self.units = encode_units
-        self.batch_size = batch_size
         self.embedding = tf.keras.layers.Embedding(vocab_size, hidden_dim)
 
-        cells = [tf.keras.layers.GRU(units, return_sequences=True, return_state=True, recurrent_initializer='glorot_uniform') for units in encode_units]
-        self.gru = tf.compat.v1.nn.rnn_cell.MultiRNNCell(cells)
+        self.gru = tf.keras.layers.GRU(self.units, return_sequences=True, return_state=True, recurrent_initializer='glorot_uniform')
         
     def call(self, tokens, state=None):
         shape_checker = ShapeChecker()
@@ -122,15 +120,13 @@ class Encoder(tf.keras.layers.Layer):
 
 
 class Decoder(tf.keras.layers.Layer):
-    def __init__(self, out_vocab_size, decode_units, batch_size, hidden_dim=300) -> None:
+    def __init__(self, vocab_size, hidden_dim, decode_units) -> None:
         super(Decoder, self).__init__()
-        self.out_vocab_size = out_vocab_size
+        self.out_vocab_size = vocab_size
         self.units = decode_units
-        self.batch_size = batch_size
         self.embedding = tf.keras.layers.Embedding(self.out_vocab_size, hidden_dim)
 
-        cells = [tf.contrib.cudnn_rnn.CudnnGRU(units, return_sequences=True, return_state=True, recurrent_initializer='glorot_uniform') for units in decode_units]
-        self.gru = tf.compat.v1.nn.rnn_cell.MultiRNNCell(cells)
+        self.gru = tf.keras.layers.GRU(self.units, return_sequences=True, return_state=True, recurrent_initializer='glorot_uniform')
 
         self.attention = Attention(self.units)
         self.convert = tf.keras.layers.Dense(self.units, activation=tf.math.tanh,
