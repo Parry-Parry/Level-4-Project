@@ -14,7 +14,6 @@ import sys
 import os
 import shutil as sh
 
-
 import pandas as pd 
 
 def flatten_strip(path, file_type=".py") -> None:
@@ -23,16 +22,25 @@ def flatten_strip(path, file_type=".py") -> None:
         Walk path looking for file type
         capture files move to flat directory
     """
-    file_dir = os.path.join(path, "code")
-    for _, _, files in os.walk(path):
-        for file in files:
-            if file.lower().endwith(file_type):
-                tmp = os.path.join(path, file)
-                new = os.path.join(file_dir, file)
-                sh.move(tmp, new)
+    if file_type.lower().equals(".py") or file_type.lower().equals(".java"):
+        file_dir = os.path.join(path, "code")
+        for _, _, files in os.walk(path):
+            for file in files:
+                if file.lower().endwith(file_type):
+                    tmp = os.path.join(path, file)
+                    new = os.path.join(file_dir, file)
+                    sh.move(tmp, new)
+    else:
+        print("File type not currently supported")
 
 def extract(file, file_type=".py") -> pd.DataFrame:
-    pass
+    if file_type.lower().equals(".py"):
+        pass
+    if file_type.lower().equals(".java"):
+        pass
+    else:
+        print("File type not currently supported")
+        return None
     """
     read file
     split by function / class definition
