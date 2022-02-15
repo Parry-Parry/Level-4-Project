@@ -39,8 +39,7 @@ class Attention(tf.keras.layers.Layer):
         self.W1 = tf.keras.layers.Dense(units, use_bias=False)
         self.W2 = tf.keras.layers.Dense(units, use_bias=False)
 
-        with tf.device('CPU:0'):
-            self.attention = tf.keras.layers.AdditiveAttention()
+        self.attention = tf.keras.layers.AdditiveAttention()
 
     def call(self, query, value, mask):
         w1_query = self.W1(query)
@@ -82,8 +81,7 @@ class Encoder(tf.keras.layers.Layer):
         super(Encoder, self).__init__()
         self.out_vocab_size = vocab_size
         self.units = encode_units
-        with tf.device('CPU:0'):
-            self.embedding = tf.keras.layers.Embedding(self.out_vocab_size, hidden_dim)
+        self.embedding = tf.keras.layers.Embedding(self.out_vocab_size, hidden_dim)
 
         self.gru = tf.keras.layers.GRU(self.units, return_sequences=True, return_state=True, recurrent_initializer='glorot_uniform')
         
@@ -98,10 +96,9 @@ class Decoder(tf.keras.layers.Layer):
         super(Decoder, self).__init__()
         self.out_vocab_size = vocab_size
         self.units = decode_units
-        with tf.device('cpu:0'):
-            self.embedding = tf.keras.layers.Embedding(self.out_vocab_size, hidden_dim)
-            self.attention = Attention(self.units)
-            self.dense = tf.keras.layers.Dense(self.out_vocab_size)
+        self.embedding = tf.keras.layers.Embedding(self.out_vocab_size, hidden_dim)
+        self.attention = Attention(self.units)
+        self.dense = tf.keras.layers.Dense(self.out_vocab_size)
 
         self.gru = tf.keras.layers.GRU(self.units, return_sequences=True, return_state=True, recurrent_initializer='glorot_uniform')
 
