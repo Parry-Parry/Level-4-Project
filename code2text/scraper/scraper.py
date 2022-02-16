@@ -2,7 +2,6 @@
 Retrieve all code in repo
 Strip inline comments
 create mapping from function string x -> docs regarding x
-
 TODO:
     Tensorflow
     Scipy
@@ -15,13 +14,13 @@ import os
 import shutil as sh
 
 import pandas as pd 
+import function_parser
+from function_parser.language_data import LANGUAGE_METADATA
+from function_parser.process import DataProcessor
+from tree_sitter import Language
+
 
 def flatten_strip(path, file_type=".py") -> None:
-    """
-    TODO:
-        Walk path looking for file type
-        capture files move to flat directory
-    """
     if file_type.lower().equals(".py") or file_type.lower().equals(".java"):
         file_dir = os.path.join(path, "code")
         for _, _, files in os.walk(path):
@@ -33,36 +32,31 @@ def flatten_strip(path, file_type=".py") -> None:
     else:
         print("File type not currently supported")
 
-def extract(file, file_type=".py") -> pd.DataFrame:
+
+def extract(dir, file_type=".py") -> pd.DataFrame:
+
     if file_type.lower().equals(".py"):
-        pass
+        language = "python"
     if file_type.lower().equals(".java"):
-        pass
+        language = "java"
     else:
         print("File type not currently supported")
         return None
-    """
-    read file
-    split by function / class definition
-    get comments
-    map to function name
-    return data frame
-    """
+    
+    DataProcessor.PARSER.set_language(
+    Language(os.path.join(function_parser.__path__[0], "tree-sitter-languages.so"), language))
+    processor = DataProcessor(
+        language=language, language_parser=LANGUAGE_METADATA[language]["language_parser"]
+    )
 
-def scrape(dir, file_type=".py") -> pd.Dataframe:
-    file_dir = os.path.join(dir, "code")
-    frame = pd.DataFrame()
-
-    for _, _, files in os.walk(file_dir):
-        for file in files:
-            tmp = extract(file, file_type)
-            frame.append(tmp)
-    return frame
-
+    path = os.path.join(dir, "code")
+    out = processor.process_dee(path, ext=LANGUAGE_METADATA[language]["ext"])
+    return out.drop(["nwo", "sha", "path", "language", "docstring_tokens", "function_tokens", "url"])
+   
 
 def main(path, out, file_type):
     flatten_strip(path, file_type)
-    frame = scrape(path, file_type)
+    frame = extract(path, file_type)
     frame.to_json(out)
 
 
