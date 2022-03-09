@@ -3,12 +3,12 @@ from transformers import RobertaTokenizer, TFAutoModel
 
 model = TFAutoModel.from_pretrained("distilroberta-base")
 
-class seq2seqHead(tf.keras.layers.Laye):
+class seq2seqHead(tf.keras.layers.Layer):
     def __init__(self, vocab_size, hidden_dim, encode_units) -> None:
         super(seq2seqHead, self).__init__()
 
 class robertaTrain(tf.keras.Model):
-    def __init__(self, embedding_dim, units,
+    def __init__(self, encoder, decoder, embedding_dim, units,
                input_text_processor,
                output_text_processor):
         super().__init__()
@@ -36,7 +36,7 @@ class robertaTrain(tf.keras.Model):
                                enc_output=enc_output,
                                mask=input_mask)
 
-        dec_result, dec_state = self.decoder(decoder_input, state=dec_state)
+        dec_result, dec_state = self.head(decoder_input, state=dec_state)
 
         y = target_token
         y_pred = dec_result.logits
