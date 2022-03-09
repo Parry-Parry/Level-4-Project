@@ -34,64 +34,23 @@ batch_size = 32 # implies 16 batch_size per GPU
 buffer = 2048
 
 train_set = (
-        tf.data.Dataset.from_tensor_slices(
-            (   
-                tf.cast(train["code"].values, tf.string),
-                tf.cast(train["docstring"].values, tf.string)
-            )
+    tf.data.Dataset.from_tensor_slices(
+        (   
+            tf.cast(train["code"].values, tf.string),
+            tf.cast(train["docstring"].values, tf.string)
         )
-    ).shuffle(buffer).batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.AUTOTUNE)
+    )
+).shuffle(buffer).batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.AUTOTUNE)
 valid_set = (
     tf.data.Dataset.from_tensor_slices(
         (
-        tf.cast(valid["code"].values, tf.string),
-        tf.cast(valid["docstring"].values, tf.string)
+            tf.cast(valid["code"].values, tf.string),
+            tf.cast(valid["docstring"].values, tf.string)
         )  
     )
 ).shuffle(buffer).batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.AUTOTUNE)
 
-input_processor = input_text_processor = tf.keras.layers.TextVectorization(
-    standardize=tf_lower_and_split_punct,
-    vocabulary="/users/level4/2393265p/workspace/l4project/data/outvocab.txt")
-
-output_processor = tf.keras.layers.TextVectorization(
-    standardize=tf_lower_and_split_punct,
-    vocabulary="/users/level4/2393265p/workspace/l4project/data/outvocab.txt")
-
-train_model = seq2seqTrain(112, 64, input_text_processor=input_processor,
-    output_text_processor=output_processor, strategy=strategy)
-
-train_model.compile(
-    optimizer=tf.optimizers.Adam(learning_rate=4e-4),
-    loss=MaskedLoss(),
-    metrics=['acc']
-)
-
-batch_loss = BatchLogs('batch_loss')
-chkpt = tf.keras.callbacks.ModelCheckpoint(
-    "/users/level4/2393265p/workspace/l4project/baseline/chkpt", monitor='acc', save_best_only=False, save_freq=2000
-)
-
-history = train_model.fit(train_set, epochs=3, validation_data=valid_set, callbacks=[batch_loss, chkpt])
-"""
 with strategy.scope():
-
-    train_set = (
-        tf.data.Dataset.from_tensor_slices(
-            (   
-                tf.cast(train["code"].values, tf.string),
-                tf.cast(train["docstring"].values, tf.string)
-            )
-        )
-    ).shuffle(buffer).batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.AUTOTUNE)
-    valid_set = (
-        tf.data.Dataset.from_tensor_slices(
-            (
-            tf.cast(valid["code"].values, tf.string),
-            tf.cast(valid["docstring"].values, tf.string)
-            )  
-        )
-    ).shuffle(buffer).batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.AUTOTUNE)
 
     input_processor = input_text_processor = tf.keras.layers.TextVectorization(
         standardize=tf_lower_and_split_punct,
@@ -116,7 +75,7 @@ with strategy.scope():
     )
 
     history = train_model.fit(train_set, epochs=3, validation_data=valid_set, callbacks=[batch_loss, chkpt])
-"""
+
 pickle.dump(history, open("/users/level4/2393265p/workspace/l4project/baseline/baseline_hisory.pkl", "wb"))
 pickle.dump(batch_loss['logs'], open("/users/level4/2393265p/workspace/l4project/baseline/baseline_loss.pkl", "wb"))
 train_model.save("/users/level4/2393265p/workspace/l4project/baseline/model")
