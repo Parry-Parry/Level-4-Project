@@ -201,8 +201,8 @@ class seq2seqTrain(tf.keras.Model):
     @tf.function
     def train_step(self, inputs):
         per_replica_losses = self.strategy.run(self._train_step, args=(inputs,))
-        return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
-                         axis=None)
+        return tf.distribute.get_replica_context().merge_call(self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
+                         axis=None))
 
 
 
