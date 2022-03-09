@@ -28,9 +28,7 @@ class DecoderOutput(typing.NamedTuple):
   attention_weights: Any
 
 """
-## ATTENTION COMPONENTS ##
-
-from https://arxiv.org/pdf/1409.0473.pdf
+## ATTENTION ##
 """
 
 class Attention(tf.keras.layers.Layer):
@@ -71,6 +69,7 @@ class MaskedLoss(tf.keras.losses.Loss):
     loss *= mask
 
     return tf.reduce_sum(loss)
+
 
 """
 ## MODEL COMPONENTS ##
@@ -196,7 +195,7 @@ class seq2seqTrain(tf.keras.Model):
 
             return {'batch_loss': average_loss}
 
-    @tf.function(input_signature=[[tf.TensorSpec(dtype=tf.string, shape=[None]), tf.TensorSpec(dtype=tf.string, shape=[None])]])
+    #@tf.function(input_signature=[[tf.TensorSpec(dtype=tf.string, shape=[None]), tf.TensorSpec(dtype=tf.string, shape=[None])]])
     def train_step(self, inputs):
         return self._train_step(inputs)
 
@@ -299,7 +298,7 @@ class seq2seq(tf.Module):
         else:
             return {'text': result_text}
 
-    @tf.function(input_signature=[tf.TensorSpec(dtype=tf.string, shape=[None])])
+    #@tf.function(input_signature=[tf.TensorSpec(dtype=tf.string, shape=[None])])
     def translate(self, input_text):
         return self.translate_unrolled(input_text)
 
