@@ -14,9 +14,12 @@ from code2text.helper.preprocess import tf_lower_and_split_punct
 
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]="true"
 
-mirrored_strategy = tf.distribute.MirroredStrategy()
-
 gpus = tf.config.experimental.list_physical_devices('GPU')
+
+if len(gpus) > 1:   
+    strategy = tf.distribute.MirroredStrategy()
+else:
+    strategy =  tf.distribute.get_strategy()
 """
 for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
@@ -30,9 +33,9 @@ valid = pd.read_json("/users/level4/2393265p/workspace/l4project/data/pyjava/val
 batch_size = 32 # implies 16 batch_size per GPU
 buffer = 2048
 
-with mirrored_strategy.scope():
+with strategy.scope():
 
-    train_set = (
+    norm_train_set = (
         tf.data.Dataset.from_tensor_slices(
             (   
                 tf.cast(train["code"].values, tf.string),
@@ -40,7 +43,7 @@ with mirrored_strategy.scope():
             )
         )
     ).shuffle(buffer).batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.AUTOTUNE)
-    valid_set = (
+    norm_valid_set = (
         tf.data.Dataset.from_tensor_slices(
             (
             tf.cast(valid["code"].values, tf.string),
@@ -49,6 +52,8 @@ with mirrored_strategy.scope():
         )
     ).shuffle(buffer).batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.AUTOTUNE)
 
+    train_set = strategy.experimental_distribute_dataset(norm_train_set)
+    valid_set = strategy.experimental_distribute_dataset(norm_valid_set)
 
     input_processor = input_text_processor = tf.keras.layers.TextVectorization(
         standardize=tf_lower_and_split_punct,
@@ -59,7 +64,7 @@ with mirrored_strategy.scope():
         vocabulary="/users/level4/2393265p/workspace/l4project/data/outvocab.txt")
 
     train_model = seq2seqTrain(112, 64, input_text_processor=input_processor,
-        output_text_processor=output_processor, strategy=mirrored_strategy)
+        output_text_processor=output_processor, strategy=strategy)
 
     train_model.compile(
         optimizer=tf.optimizers.Adam(learning_rate=4e-4),
