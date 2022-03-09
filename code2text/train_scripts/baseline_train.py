@@ -59,7 +59,7 @@ output_processor = tf.keras.layers.TextVectorization(
 with mirrored_strategy.scope():
 
     train_model = seq2seqTrain(112, 64, input_text_processor=input_processor,
-        output_text_processor=output_processor)
+        output_text_processor=output_processor, strategy=mirrored_strategy)
 
     train_model.compile(
         optimizer=tf.optimizers.Adam(learning_rate=4e-4),

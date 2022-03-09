@@ -26,6 +26,7 @@ class DecoderInput(typing.NamedTuple):
 class DecoderOutput(typing.NamedTuple):
   logits: Any
   attention_weights: Any
+  
 
 """
 ## ATTENTION ##
@@ -127,7 +128,7 @@ class Decoder(tf.keras.layers.Layer):
 class seq2seqTrain(tf.keras.Model):
     def __init__(self, embedding_dim, units,
                input_text_processor,
-               output_text_processor):
+               output_text_processor, strategy):
         super().__init__()
     
         encoder = Encoder(input_text_processor.vocabulary_size(),
@@ -181,7 +182,7 @@ class seq2seqTrain(tf.keras.Model):
             dec_state = enc_state
             loss = tf.constant(0.0)
 
-            for t in range(max_target_length.shape-1):
+            for t in tf.range(max_target_length-1):
                 new_tokens = target_tokens[:, t:t+2]
                 step_loss, dec_state = self._loop_step(new_tokens, input_mask,
                                              enc_output, dec_state)
@@ -195,9 +196,12 @@ class seq2seqTrain(tf.keras.Model):
 
             return {'batch_loss': average_loss}
 
-    #@tf.function(input_signature=[[tf.TensorSpec(dtype=tf.string, shape=[None]), tf.TensorSpec(dtype=tf.string, shape=[None])]])
+    @tf.function(input_signature=[[tf.TensorSpec(dtype=tf.string, shape=[None]), tf.TensorSpec(dtype=tf.string, shape=[None])]])
     def train_step(self, inputs):
-        return self._train_step(inputs)
+        per_replica_losses = self.strategy.run(self._train_step, args=(inputs,))
+        return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
+                         axis=None)
+
 
 
 class seq2seq(tf.Module):
