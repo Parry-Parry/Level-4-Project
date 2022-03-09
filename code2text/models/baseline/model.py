@@ -182,6 +182,7 @@ class seq2seqTrain(tf.keras.Model):
 
             dec_state = enc_state
             loss = tf.constant(0.0)
+            print(max_target_length.shape)
 
             for t in tf.range(max_target_length-1):
                 new_tokens = target_tokens[:, t:t+2]
