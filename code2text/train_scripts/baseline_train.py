@@ -21,7 +21,7 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
 """
-tf.config.run_functions_eagerly(False)
+#tf.config.run_functions_eagerly(False)
 
 
 train = pd.read_json("/users/level4/2393265p/workspace/l4project/data/pyjava/train.jsonl", lines=True)
