@@ -204,7 +204,7 @@ class seq2seqTrain(tf.keras.Model):
         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                          axis=None)
     """
-    @tf.function
+    #@tf.function
     def train_step(self, inputs):
         return self._train_step(inputs)
 
