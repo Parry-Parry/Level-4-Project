@@ -140,6 +140,7 @@ class seq2seqTrain(tf.keras.Model):
         self.decoder = decoder
         self.input_text_processor = input_text_processor
         self.output_text_processor = output_text_processor
+        self.strategy = strategy
 
     def _preprocess(self, input_text, target_text):
 
