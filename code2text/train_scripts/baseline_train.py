@@ -35,7 +35,7 @@ buffer = 2048
 
 with strategy.scope():
 
-    norm_train_set = (
+    train_set = (
         tf.data.Dataset.from_tensor_slices(
             (   
                 tf.cast(train["code"].values, tf.string),
@@ -43,7 +43,7 @@ with strategy.scope():
             )
         )
     ).shuffle(buffer).batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.AUTOTUNE)
-    norm_valid_set = (
+    valid_set = (
         tf.data.Dataset.from_tensor_slices(
             (
             tf.cast(valid["code"].values, tf.string),
@@ -51,9 +51,6 @@ with strategy.scope():
             )  
         )
     ).shuffle(buffer).batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.AUTOTUNE)
-
-    train_set = strategy.experimental_distribute_dataset(norm_train_set)
-    valid_set = strategy.experimental_distribute_dataset(norm_valid_set)
 
     input_processor = input_text_processor = tf.keras.layers.TextVectorization(
         standardize=tf_lower_and_split_punct,
@@ -77,7 +74,7 @@ with strategy.scope():
         "/users/level4/2393265p/workspace/l4project/baseline/chkpt", monitor='acc', save_best_only=False, save_freq=2000
     )
 
-    history = train_model.fit(train_set, epochs=3, validation_data=valid_set, steps_per_epoch = 2000, callbacks=[batch_loss, chkpt])
+    history = train_model.fit(train_set, epochs=3, validation_data=valid_set, callbacks=[batch_loss, chkpt])
 
 pickle.dump(history, open("/users/level4/2393265p/workspace/l4project/baseline/baseline_hisory.pkl", "wb"))
 pickle.dump(batch_loss['logs'], open("/users/level4/2393265p/workspace/l4project/baseline/baseline_loss.pkl", "wb"))
