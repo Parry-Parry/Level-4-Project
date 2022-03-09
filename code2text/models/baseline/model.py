@@ -200,7 +200,7 @@ class seq2seqTrain(tf.keras.Model):
     #@tf.function(input_signature=[[tf.TensorSpec(dtype=tf.string, shape=[None]), tf.TensorSpec(dtype=tf.string, shape=[None])]])
     @tf.function
     def train_step(self, inputs):
-        per_replica_losses = self.strategy.run(self._train_step, args=(inputs))
+        per_replica_losses = self.strategy.run(self._train_step, args=(inputs,))
         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                          axis=None)
 
