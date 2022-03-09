@@ -77,7 +77,7 @@ with strategy.scope():
         "/users/level4/2393265p/workspace/l4project/baseline/chkpt", monitor='acc', save_best_only=False, save_freq=2000
     )
 
-    history = train_model.fit(train_set, epochs=3, validation_data=valid_set, callbacks=[batch_loss, chkpt])
+    history = train_model.fit(train_set, epochs=3, validation_data=valid_set, steps_per_epoch = 2000, callbacks=[batch_loss, chkpt])
 
 pickle.dump(history, open("/users/level4/2393265p/workspace/l4project/baseline/baseline_hisory.pkl", "wb"))
 pickle.dump(batch_loss['logs'], open("/users/level4/2393265p/workspace/l4project/baseline/baseline_loss.pkl", "wb"))
