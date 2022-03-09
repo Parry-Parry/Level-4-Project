@@ -27,36 +27,36 @@ for gpu in gpus:
 train = pd.read_json("/users/level4/2393265p/workspace/l4project/data/pyjava/train.jsonl", lines=True)
 valid = pd.read_json("/users/level4/2393265p/workspace/l4project/data/pyjava/valid.jsonl", lines=True)
 
-batch_size = 32
+batch_size = 32 # implies 16 batch_size per GPU
 buffer = 2048
 
-train_set = (
-    tf.data.Dataset.from_tensor_slices(
-        (
-            tf.cast(train["code"].values, tf.string),
-            tf.cast(train["docstring"].values, tf.string)
-        )
-    )
-).shuffle(buffer).batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.AUTOTUNE)
-valid_set = (
-    tf.data.Dataset.from_tensor_slices(
-        (
-        tf.cast(valid["code"].values, tf.string),
-        tf.cast(valid["docstring"].values, tf.string)
-        )  
-    )
-).shuffle(buffer).batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.AUTOTUNE)
-
-
-input_processor = input_text_processor = tf.keras.layers.TextVectorization(
-    standardize=tf_lower_and_split_punct,
-    vocabulary="/users/level4/2393265p/workspace/l4project/data/outvocab.txt")
-
-output_processor = tf.keras.layers.TextVectorization(
-    standardize=tf_lower_and_split_punct,
-    vocabulary="/users/level4/2393265p/workspace/l4project/data/outvocab.txt")
-
 with mirrored_strategy.scope():
+
+    train_set = (
+        tf.data.Dataset.from_tensor_slices(
+            (   
+                tf.cast(train["code"].values, tf.string),
+                tf.cast(train["docstring"].values, tf.string)
+            )
+        )
+    ).shuffle(buffer).batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.AUTOTUNE)
+    valid_set = (
+        tf.data.Dataset.from_tensor_slices(
+            (
+            tf.cast(valid["code"].values, tf.string),
+            tf.cast(valid["docstring"].values, tf.string)
+            )  
+        )
+    ).shuffle(buffer).batch(batch_size, drop_remainder=True).cache().prefetch(tf.data.AUTOTUNE)
+
+
+    input_processor = input_text_processor = tf.keras.layers.TextVectorization(
+        standardize=tf_lower_and_split_punct,
+        vocabulary="/users/level4/2393265p/workspace/l4project/data/outvocab.txt")
+
+    output_processor = tf.keras.layers.TextVectorization(
+        standardize=tf_lower_and_split_punct,
+        vocabulary="/users/level4/2393265p/workspace/l4project/data/outvocab.txt")
 
     train_model = seq2seqTrain(112, 64, input_text_processor=input_processor,
         output_text_processor=output_processor, strategy=mirrored_strategy)

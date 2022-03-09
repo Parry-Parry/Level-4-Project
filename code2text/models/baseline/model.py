@@ -197,7 +197,8 @@ class seq2seqTrain(tf.keras.Model):
 
             return {'batch_loss': average_loss}
 
-    @tf.function(input_signature=[[tf.TensorSpec(dtype=tf.string, shape=[None]), tf.TensorSpec(dtype=tf.string, shape=[None])]])
+    #@tf.function(input_signature=[[tf.TensorSpec(dtype=tf.string, shape=[None]), tf.TensorSpec(dtype=tf.string, shape=[None])]])
+    @tf.function
     def train_step(self, inputs):
         per_replica_losses = self.strategy.run(self._train_step, args=(inputs,))
         return self.strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
