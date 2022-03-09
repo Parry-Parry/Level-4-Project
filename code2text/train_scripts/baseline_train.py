@@ -24,8 +24,8 @@ for gpu in gpus:
 tf.config.run_functions_eagerly(False)
 
 
-train = pd.read_json("/users/level4/2393265p/workspace/l4project/data/pyjava/train.json")
-valid = pd.read_json("/users/level4/2393265p/workspace/l4project/data/pyjava/valid.json")
+train = pd.read_json("/users/level4/2393265p/workspace/l4project/data/pyjava/train.jsonl", lines=True)
+valid = pd.read_json("/users/level4/2393265p/workspace/l4project/data/pyjava/valid.jsonl", lines=True)
 
 batch_size = 32
 buffer = 2048
