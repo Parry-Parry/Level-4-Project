@@ -17,9 +17,10 @@ os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]="true"
 mirrored_strategy = tf.distribute.MirroredStrategy()
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
-
+"""
 for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
+"""
 tf.config.run_functions_eagerly(False)
 
 
