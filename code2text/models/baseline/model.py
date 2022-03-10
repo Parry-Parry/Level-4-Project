@@ -113,7 +113,7 @@ class Decoder(tf.keras.layers.Layer):
 
         rnn_output, state = self.gru(vectors, initial_state=state)
 
-        context_vector, attention_weights = self.attention([rnn_output, inputs.enc_output], mask=inputs.mask, return_attention_scores=True)
+        context_vector, attention_weights = self.attention([rnn_output, inputs.enc_output], mask=[tf.ones(tf.shape(rnn_output)[:-1], dtype=bool), inputs.mask], return_attention_scores=True)
 
         context_and_rnn_output = tf.concat([context_vector, rnn_output], axis=-1)
 
