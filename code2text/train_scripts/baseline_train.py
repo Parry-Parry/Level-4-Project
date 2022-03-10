@@ -72,7 +72,7 @@ chkpt = tf.keras.callbacks.ModelCheckpoint(
     "/users/level4/2393265p/workspace/l4project/baseline/chkpt", monitor='acc', save_best_only=False, save_freq=2000
 )
 
-history = train_model.fit(train_set, epochs=4, validation_data=valid_set, callbacks=[batch_loss, chkpt])
+history = train_model.fit(train_set, epochs=4, validation_data=valid_set, callbacks=[batch_loss])
 
 """
 with strategy.scope():

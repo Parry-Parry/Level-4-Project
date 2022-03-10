@@ -97,7 +97,8 @@ class Decoder(tf.keras.layers.Layer):
         self.out_vocab_size = vocab_size
         self.units = decode_units
         self.embedding = tf.keras.layers.Embedding(self.out_vocab_size, hidden_dim)
-        self.attention = tf.keras.layers.Attention()
+        with tf.device('/gpu:1'):
+            self.attention = tf.keras.layers.Attention()
         self.dense = tf.keras.layers.Dense(self.out_vocab_size)
 
         self.gru = tf.keras.layers.GRU(self.units, return_sequences=True, return_state=True, recurrent_initializer='glorot_uniform')
