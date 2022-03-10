@@ -97,7 +97,7 @@ class Decoder(tf.keras.layers.Layer):
         self.out_vocab_size = vocab_size
         self.units = decode_units
         self.embedding = tf.keras.layers.Embedding(self.out_vocab_size, hidden_dim)
-        self.attention = Attention(self.units)
+        self.attention = tf.keras.layers.Attention()
         self.dense = tf.keras.layers.Dense(self.out_vocab_size)
 
         self.gru = tf.keras.layers.GRU(self.units, return_sequences=True, return_state=True, recurrent_initializer='glorot_uniform')
@@ -113,8 +113,7 @@ class Decoder(tf.keras.layers.Layer):
 
         rnn_output, state = self.gru(vectors, initial_state=state)
 
-        context_vector, attention_weights = self.attention(
-            query=rnn_output, value=inputs.enc_output, mask=inputs.mask)
+        context_vector, attention_weights = self.attention([rnn_output, inputs.enc_output], mask=inputs.mask, return_attention_scores=True)
 
         context_and_rnn_output = tf.concat([context_vector, rnn_output], axis=-1)
 

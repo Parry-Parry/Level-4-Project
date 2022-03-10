@@ -2,7 +2,7 @@ from typing import Tuple
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-from transformers import TFRobertaModel, RobertaTokenizer
+from transformers import TFRobertaModel, RobertaTokenizer, RobertaConfig
 
 from code2text.models.baseline.model import DecoderInput, DecoderOutput
 
@@ -25,5 +25,6 @@ class seq2seq():
         sampler = tfa.seq2seq.TrainingSampler()
         output_layer = tf.keras.layers.Dense(self.tokenizer.vocab_size)
         self.decoder = tfa.seq2seq.BasicDecoder(decoder_cell, sampler, output_layer)
+    
 
     
