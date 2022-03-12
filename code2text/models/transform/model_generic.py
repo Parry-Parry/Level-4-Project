@@ -25,6 +25,10 @@ class seq2seq():
         sampler = tfa.seq2seq.TrainingSampler()
         output_layer = tf.keras.layers.Dense(self.tokenizer.vocab_size)
         self.decoder = tfa.seq2seq.BasicDecoder(decoder_cell, sampler, output_layer)
+
+    def _preprocess(self, input_text, target_text):
+        pass
+    
     
 
     
