@@ -1,6 +1,4 @@
 from transformers import TFAutoModelForSeq2SeqLM, RobertaTokenizer, TrainingArguments, Trainer
-import datasets
-from datasets import load_metric
 
 import tensorflow as tf
 
@@ -22,21 +20,10 @@ else:
 
 tokenizer = RobertaTokenizer.from_pretrained("microsoft/codebert")
 
-model = TFAutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspace/l4project/code/smallbert")
-
-metric = load_metric("bleu", "meteor", "rouge")
+model = TFAutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspace/l4project/code/smallbert/smallbert")
 
 def tokenize_function(text):
     return tokenizer(text, padding="max_length", truncation=True, return_tensors='tf')
-
-def compute_metrics(eval_pred):
-
-    logits, labels = eval_pred
-
-    predictions = np.argmax(logits, axis=-1)
-
-    return metric.compute(predictions=predictions, references=labels)   
-
 
 train = pd.read_json("/users/level4/2393265p/workspace/l4project/data/pyjava/train.jsonl", lines=True)
 valid = pd.read_json("/users/level4/2393265p/workspace/l4project/data/pyjava/valid.jsonl", lines=True)
