@@ -9,6 +9,8 @@ import pandas as pd
 import numpy as np 
 import pickle
 
+ROOT_DIR = "X"
+
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]="true"
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
