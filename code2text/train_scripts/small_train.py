@@ -45,7 +45,7 @@ def bleu_fn(predictions, labels):
     decoded_predictions = tokenizer.batch_decode(predictions, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
     result = bleu_metric.compute(predictions=decoded_predictions, references=decoded_labels)
-    return result.items{}
+    return result.items()
 
 ### ARGS ###
 
@@ -74,8 +74,6 @@ ds = tokenized.shuffle().train_test_split(test_size=.2)
 ### TRAINING ###
 
 with strategy.scope():
-    #train_set = tokenize_function(train["code"].values.tolist(), train["docstring"].values.tolist()).cache().prefetch(tf.data.AUTOTUNE)
-    #valid_set = tokenize_function(valid["code"].values.tolist(), valid["docstring"].values.tolist()).cache().prefetch(tf.data.AUTOTUNE)
 
     train_set = ds["train"].to_tf_dataset(
                     columns=["input_ids", "attention_mask", "labels"],
