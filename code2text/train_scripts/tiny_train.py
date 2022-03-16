@@ -14,7 +14,7 @@ os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]="true"
 gpus = tf.config.experimental.list_physical_devices('GPU')
 
 if len(gpus) > 1:   
-    strategy = tf.distribute.MultiWorkerMirroredStrategy()
+    strategy = tf.distribute.MirroredStrategy()
 else:
     strategy =  tf.distribute.get_strategy()
 
@@ -92,15 +92,15 @@ with strategy.scope():
         optimizer=optimizer
     )
 
-data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, return_tensors="np")
+data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, return_tensors="tf")
 
 train_set = train.to_tf_dataset(
-                    columns=["input_ids", "attention_mask", "labels"],
+                    columns=['input_ids', 'token_type_ids', 'attention_mask', 'labels'],
                     shuffle=True,
                     batch_size=batch_size,
                     collate_fn=data_collator)
 valid_set = valid.to_tf_dataset(
-                    columns=["input_ids", "attention_mask", "labels"],
+                    columns=['input_ids', 'token_type_ids', 'attention_mask', 'labels'],
                     shuffle=True,
                     batch_size=batch_size,
                     collate_fn=data_collator)
