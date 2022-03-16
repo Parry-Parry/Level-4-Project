@@ -101,12 +101,12 @@ with strategy.scope():
     train_set = train_set.with_options(options)   
     valid_set = valid_set.with_options(options)    
 
-    train_set = strategy.experimental_distribute_dataset(train_set)
-    valid_set = strategy.experimental_distribute_dataset(valid_set)
-
     rouge_callback = KerasMetricCallback(rouge_fn, eval_dataset=valid_set)
 
     bleu_callback = KerasMetricCallback(bleu_fn, eval_dataset=valid_set)
+
+    train_set = strategy.experimental_distribute_dataset(train_set)
+    valid_set = strategy.experimental_distribute_dataset(valid_set)
 
     num_train_steps = len(train_set) * epochs
 
