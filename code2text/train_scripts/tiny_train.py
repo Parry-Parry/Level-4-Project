@@ -64,6 +64,15 @@ valid = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4proj
 tokenized = train.map(tokenize_function, batched=True)
 ds = tokenized.shuffle().train_test_split(test_size=.2)
 
+def dataset_fn(input_context):
+  batch_size = input_context.get_per_replica_batch_size(batch_size)
+  dataset = tf.data.Dataset.from_tensors(([1.],[1.])).repeat(64).batch(16)
+  dataset = dataset.shard(
+    input_context.num_input_pipelines, input_context.input_pipeline_id)
+  dataset = dataset.batch(batch_size)
+  dataset = dataset.prefetch(2) # This prefetches 2 batches per device.
+  return dataset
+
 ### TRAINING ###
 
 with strategy.scope():
@@ -88,9 +97,12 @@ with strategy.scope():
                     collate_fn=data_collator)
 
     options = tf.data.Options()
-    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
+    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
     train_set = train_set.with_options(options)   
     valid_set = valid_set.with_options(options)    
+
+    train_set = strategy.experimental_distribute_dataset(train_set)
+    valid_set = strategy.experimental_distribute_dataset(valid_set)
 
     rouge_callback = KerasMetricCallback(rouge_fn, eval_dataset=valid_set)
 
