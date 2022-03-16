@@ -106,15 +106,16 @@ valid_set = valid.to_tf_dataset(
                     collate_fn=data_collator)
 
 options = tf.data.Options()
-options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
+options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
 train_set = train_set.with_options(options)   
-valid_set = valid_set.with_options(options)    
+#valid_set = valid_set.with_options(options)    
 
 rouge_callback = KerasMetricCallback(rouge_fn, eval_dataset=valid_set)
 
 bleu_callback = KerasMetricCallback(bleu_fn, eval_dataset=valid_set)
 
-history = model.fit(train_set, epochs=epochs, validation_data=valid_set, callbacks=[rouge_callback, bleu_callback])
+#history = model.fit(train_set, epochs=epochs, validation_data=valid_set, callbacks=[rouge_callback, bleu_callback])
+history = model.fit(train_set, epochs=epochs, callbacks=[rouge_callback, bleu_callback])
 
 pickle.dump(history, open("/users/level4/2393265p/workspace/l4project/tiny/tiny_history.pkl", "wb"))
 model.save("/users/level4/2393265p/workspace/l4project/tiny/model")

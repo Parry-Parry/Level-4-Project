@@ -106,7 +106,7 @@ valid_set = valid.to_tf_dataset(
                     collate_fn=data_collator)
 
 options = tf.data.Options()
-options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
+options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
 train_set = train_set.with_options(options)   
 valid_set = valid_set.with_options(options)    
 
