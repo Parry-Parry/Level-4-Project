@@ -10,7 +10,6 @@ import pickle
 ### CUDA SETUP ###
 
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]="true"
-#os.environ["TF_GPU_ALLOCATOR"]="cuda_malloc_async"
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 
@@ -41,13 +40,6 @@ def bleu_fn(predictions, labels):
     result = bleu_metric.compute(predictions=decoded_predictions, references=decoded_labels)
     return result.items()
 
-### ARGS ###
-
-buffer = 512
-batch_size = 8
-epochs = 4
-lr = 4e-4
-
 ### DATASET PREP ###
 
 def tokenize_function(set):
@@ -59,45 +51,35 @@ def tokenize_function(set):
 
     return inputs
 
+### LOAD DATA ###
+
 train = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/pyjava/train.jsonl")["train"]
 valid = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/pyjava/valid.jsonl")["train"]
 
-tokenized = train.map(tokenize_function, batched=True)
-ds = tokenized.shuffle().train_test_split(test_size=.2)
+tokenized_train = train.map(tokenize_function, batched=True)
+tokenized_valid = valid.map(tokenize_function, batched=True)
+
+train = tokenized_train.shuffle()
+valid = tokenized_valid.shuffle()
+
+### ARGS ###
+
+buffer = 512
+batch_size = 8
+epochs = 4
+lr = 4e-4
+num_train_steps = len(train)
+
 
 ### TRAINING ###
 
 with strategy.scope():
 
-    model = TFAutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspace/l4project/code/smallbert/smallbert", 
+    model = TFAutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspace/l4project/smallbert/smallbert", 
     pad_token_id=1, 
     bos_token_id = 0, 
     eos_token_id = 2, 
     decoder_start_token_id = 0)
-
-    data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, return_tensors="tf")
-
-    train_set = ds["train"].to_tf_dataset(
-                    columns=["input_ids", "attention_mask", "labels"],
-                    shuffle=True,
-                    batch_size=batch_size,
-                    collate_fn=data_collator)
-    valid_set = ds["test"].to_tf_dataset(
-                    columns=["input_ids", "attention_mask", "labels"],
-                    shuffle=True,
-                    batch_size=batch_size,
-                    collate_fn=data_collator)
-
-    options = tf.data.Options()
-    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
-    train_set = train_set.with_options(options)   
-    valid_set = valid_set.with_options(options)        
-
-    rouge_callback = KerasMetricCallback(rouge_fn, eval_dataset=valid_set)
-
-    bleu_callback = KerasMetricCallback(bleu_fn, eval_dataset=valid_set)
-
-    num_train_steps = len(train_set) * epochs
 
     optimizer, lr_schedule = create_optimizer(
         init_lr=lr,
@@ -110,7 +92,29 @@ with strategy.scope():
         optimizer=optimizer
     )
 
-    history = model.fit(train_set, epochs=epochs, validation_data=valid_set, callbacks=[rouge_callback, bleu_callback])
+data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, return_tensors="tf")
+
+train_set = train.to_tf_dataset(
+                    columns=["input_ids", "attention_mask", "labels"],
+                    shuffle=True,
+                    batch_size=batch_size,
+                    collate_fn=data_collator)
+valid_set = valid.to_tf_dataset(
+                    columns=["input_ids", "attention_mask", "labels"],
+                    shuffle=True,
+                    batch_size=batch_size,
+                    collate_fn=data_collator)
+
+options = tf.data.Options()
+options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
+train_set = train_set.with_options(options)   
+valid_set = valid_set.with_options(options)    
+
+rouge_callback = KerasMetricCallback(rouge_fn, eval_dataset=valid_set)
+
+bleu_callback = KerasMetricCallback(bleu_fn, eval_dataset=valid_set)
+
+history = model.fit(train_set, epochs=epochs, validation_data=valid_set, callbacks=[rouge_callback, bleu_callback])
 
 pickle.dump(history, open("/users/level4/2393265p/workspace/l4project/small/small_history.pkl", "wb"))
 model.save("/users/level4/2393265p/workspace/l4project/small/model")

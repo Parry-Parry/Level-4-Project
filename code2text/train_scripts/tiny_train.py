@@ -13,7 +13,7 @@ os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]="true"
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 
-if len(gpus) > 2:   
+if len(gpus) > 1:   
     strategy = tf.distribute.MirroredStrategy()
 else:
     strategy =  tf.distribute.get_strategy()
@@ -56,8 +56,11 @@ def tokenize_function(set):
 train = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/pyjava/train.jsonl")["train"]
 valid = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/pyjava/valid.jsonl")["train"]
 
-tokenized = train.map(tokenize_function, batched=True)
-ds = tokenized.shuffle().train_test_split(test_size=.2)
+tokenized_train = train.map(tokenize_function, batched=True)
+tokenized_valid = valid.map(tokenize_function, batched=True)
+
+train = tokenized_train.shuffle()
+valid = tokenized_valid.shuffle()
 
 ### ARGS ###
 
@@ -65,7 +68,7 @@ buffer = 512
 batch_size = 8
 epochs = 4
 lr = 4e-4
-num_train_steps = len(ds["train"])
+num_train_steps = len(train)
 
 
 ### TRAINING ###
@@ -91,12 +94,12 @@ with strategy.scope():
 
 data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, return_tensors="tf")
 
-train_set = ds["train"].to_tf_dataset(
+train_set = train.to_tf_dataset(
                     columns=["input_ids", "attention_mask", "labels"],
                     shuffle=True,
                     batch_size=batch_size,
                     collate_fn=data_collator)
-valid_set = ds["test"].to_tf_dataset(
+valid_set = valid.to_tf_dataset(
                     columns=["input_ids", "attention_mask", "labels"],
                     shuffle=True,
                     batch_size=batch_size,
