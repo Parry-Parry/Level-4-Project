@@ -40,13 +40,6 @@ def bleu_fn(predictions, labels):
     result = bleu_metric.compute(predictions=decoded_predictions, references=decoded_labels)
     return result.items()
 
-### ARGS ###
-
-buffer = 512
-batch_size = 8
-epochs = 4
-lr = 4e-4
-
 ### DATASET PREP ###
 
 def tokenize_function(set):
@@ -58,20 +51,22 @@ def tokenize_function(set):
 
     return inputs
 
+### LOAD DATA ###
+
 train = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/pyjava/train.jsonl")["train"]
 valid = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/pyjava/valid.jsonl")["train"]
 
 tokenized = train.map(tokenize_function, batched=True)
 ds = tokenized.shuffle().train_test_split(test_size=.2)
 
-def dataset_fn(input_context):
-  batch_size = input_context.get_per_replica_batch_size(batch_size)
-  dataset = tf.data.Dataset.from_tensors(([1.],[1.])).repeat(64).batch(16)
-  dataset = dataset.shard(
-    input_context.num_input_pipelines, input_context.input_pipeline_id)
-  dataset = dataset.batch(batch_size)
-  dataset = dataset.prefetch(2) # This prefetches 2 batches per device.
-  return dataset
+### ARGS ###
+
+buffer = 512
+batch_size = 8
+epochs = 4
+lr = 4e-4
+num_train_steps = len(ds["train"])
+
 
 ### TRAINING ###
 
@@ -82,30 +77,6 @@ with strategy.scope():
     bos_token_id = 0, 
     eos_token_id = 2, 
     decoder_start_token_id = 0)
-
-    data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, return_tensors="tf")
-
-    train_set = ds["train"].to_tf_dataset(
-                    columns=["input_ids", "attention_mask", "labels"],
-                    shuffle=True,
-                    batch_size=batch_size,
-                    collate_fn=data_collator)
-    valid_set = ds["test"].to_tf_dataset(
-                    columns=["input_ids", "attention_mask", "labels"],
-                    shuffle=True,
-                    batch_size=batch_size,
-                    collate_fn=data_collator)
-
-    options = tf.data.Options()
-    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
-    train_set = train_set.with_options(options)   
-    valid_set = valid_set.with_options(options)    
-
-    rouge_callback = KerasMetricCallback(rouge_fn, eval_dataset=valid_set)
-
-    bleu_callback = KerasMetricCallback(bleu_fn, eval_dataset=valid_set)
-
-    num_train_steps = len(train_set) * epochs
 
     optimizer, lr_schedule = create_optimizer(
         init_lr=lr,
@@ -118,10 +89,31 @@ with strategy.scope():
         optimizer=optimizer
     )
 
-    train_set = strategy.experimental_distribute_dataset(train_set)
-    valid_set = strategy.experimental_distribute_dataset(valid_set)
+data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, return_tensors="tf")
 
-    history = model.fit(train_set, epochs=epochs, validation_data=valid_set, callbacks=[rouge_callback, bleu_callback])
+train_set = ds["train"].to_tf_dataset(
+                    columns=["input_ids", "attention_mask", "labels"],
+                    shuffle=True,
+                    batch_size=batch_size,
+                    collate_fn=data_collator)
+valid_set = ds["test"].to_tf_dataset(
+                    columns=["input_ids", "attention_mask", "labels"],
+                    shuffle=True,
+                    batch_size=batch_size,
+                    collate_fn=data_collator)
+
+num_train_steps = len(train_set) * epochs
+
+options = tf.data.Options()
+options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
+train_set = train_set.with_options(options)   
+valid_set = valid_set.with_options(options)    
+
+rouge_callback = KerasMetricCallback(rouge_fn, eval_dataset=valid_set)
+
+bleu_callback = KerasMetricCallback(bleu_fn, eval_dataset=valid_set)
+
+history = model.fit(train_set, epochs=epochs, validation_data=valid_set, callbacks=[rouge_callback, bleu_callback])
 
 pickle.dump(history, open("/users/level4/2393265p/workspace/l4project/tiny/tiny_history.pkl", "wb"))
 model.save("/users/level4/2393265p/workspace/l4project/tiny/model")
