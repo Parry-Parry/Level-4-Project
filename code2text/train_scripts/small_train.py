@@ -86,6 +86,11 @@ with strategy.scope():
                     shuffle=True,
                     batch_size=batch_size,
                     collate_fn=data_collator)
+    
+    options = tf.data.Options()
+    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
+    train_set = train_set.with_options(options)   
+    valid_set = valid_set.with_options(options)    
 
     rouge_callback = KerasMetricCallback(rouge_fn, eval_dataset=valid_set)
 
