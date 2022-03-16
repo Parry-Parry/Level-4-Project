@@ -14,7 +14,7 @@ os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]="true"
 gpus = tf.config.experimental.list_physical_devices('GPU')
 
 if len(gpus) > 1:   
-    strategy = tf.distribute.MirroredStrategy()
+    strategy = tf.distribute.MultiWorkerMirroredStrategy()
 else:
     strategy =  tf.distribute.get_strategy()
 
@@ -65,7 +65,7 @@ valid = tokenized_valid.shuffle()
 ### ARGS ###
 
 buffer = 512
-batch_size = 8
+batch_size = 64
 epochs = 4
 lr = 4e-4
 num_train_steps = len(train)
