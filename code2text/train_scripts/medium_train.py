@@ -43,8 +43,8 @@ def bleu_fn(predictions, labels):
 
 ### ARGS ###
 
-buffer = 2048
-batch_size = 32
+buffer = 512
+batch_size = 8
 epochs = 4
 lr = 4e-4
 
