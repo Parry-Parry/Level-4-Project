@@ -105,9 +105,6 @@ with strategy.scope():
 
     bleu_callback = KerasMetricCallback(bleu_fn, eval_dataset=valid_set)
 
-    train_set = strategy.experimental_distribute_dataset(train_set)
-    valid_set = strategy.experimental_distribute_dataset(valid_set)
-
     num_train_steps = len(train_set) * epochs
 
     optimizer, lr_schedule = create_optimizer(
@@ -120,6 +117,9 @@ with strategy.scope():
     model.compile(
         optimizer=optimizer
     )
+
+    train_set = strategy.experimental_distribute_dataset(train_set)
+    valid_set = strategy.experimental_distribute_dataset(valid_set)
 
     history = model.fit(train_set, epochs=epochs, validation_data=valid_set, callbacks=[rouge_callback, bleu_callback])
 
