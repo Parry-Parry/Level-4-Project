@@ -87,7 +87,7 @@ with strategy.scope():
                     batch_size=batch_size,
                     collate_fn=data_collator)
     
-    options = tf.data.Options()
+    options = tf.data.experimental.DistributeOptions()
     options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
     train_set = train_set.with_options(options)   
     valid_set = valid_set.with_options(options)    
