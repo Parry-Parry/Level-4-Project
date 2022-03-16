@@ -15,16 +15,16 @@ augment_frame = {lang : pd.read_json(augment_paths[lang]) for lang in langs}
 
 dataset_frame = {file : pd.read_json(os.path.join(dataset_path, file + ".jsonl") ,lines=True) for file in filenames}
 
-# FUNCTIONS
+# FRAME 2 DICR
 
 def augment_dict(df):
     df.set_index(['identifier'])
     dd = defaultdict(list)
     return df.to_dict('index', into=dd) 
-    
-# AUGMENT
 
 augment_dicts = {lang : augment_dict(augment_frame[lang]) for lang in langs}
+
+# AUGMENT
 
 def augment(row):
     lang = row["language"]
@@ -39,5 +39,3 @@ for k in dataset_frame.keys():
 
 for k, v in dataset_frame.items():
     v.to_json(os.path.join(out_path, k + ".jsonl"), orient='records', lines=True)
-
-    # append docstring of identifier to docstring of code
