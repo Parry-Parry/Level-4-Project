@@ -68,7 +68,7 @@ ds = tokenized.shuffle().train_test_split(test_size=.2)
 
 with strategy.scope():
 
-    model = TFAutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspace/l4project/tinybert", 
+    model = TFAutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspace/l4project/medsmallbert", 
     pad_token_id=1, 
     bos_token_id = 0, 
     eos_token_id = 2, 
@@ -106,5 +106,5 @@ with strategy.scope():
 
     history = model.fit(train_set, epochs=epochs, validation_data=valid_set, callbacks=[rouge_callback, bleu_callback])
 
-pickle.dump(history, open("/users/level4/2393265p/workspace/l4project/tiny/tiny_history.pkl", "wb"))
-model.save("/users/level4/2393265p/workspace/l4project/tiny/model")
+pickle.dump(history, open("/users/level4/2393265p/workspace/l4project/medsmall/medsmall_history.pkl", "wb"))
+model.save("/users/level4/2393265p/workspace/l4project/medsmall/model")
