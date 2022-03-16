@@ -19,17 +19,9 @@ if len(gpus) > 1:
 else:
     strategy =  tf.distribute.get_strategy()
 
-### BUILD MODEL ###
+### TOKENIZER ###
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
-
-model = TFAutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspace/l4project/code/tinybert", 
-    pad_token_id=1, 
-    bos_token_id = 0, 
-    eos_token_id = 2, 
-    decoder_start_token_id = 0)
-
-data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, return_tensors="tf")
 
 ### CALLBACKS ###
 
@@ -76,6 +68,14 @@ ds = tokenized.shuffle().train_test_split(test_size=.2)
 ### TRAINING ###
 
 with strategy.scope():
+
+    model = TFAutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspace/l4project/code/tinybert", 
+    pad_token_id=1, 
+    bos_token_id = 0, 
+    eos_token_id = 2, 
+    decoder_start_token_id = 0)
+
+    data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, return_tensors="tf")
 
     train_set = ds["train"].to_tf_dataset(
                     columns=["input_ids", "attention_mask", "labels"],
