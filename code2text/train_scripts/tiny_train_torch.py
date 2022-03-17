@@ -72,6 +72,7 @@ training_args = Seq2SeqTrainingArguments(
     per_device_eval_batch_size=batch_size,
     weight_decay=0.01,
     save_total_limit=3,
+    save_steps=10000,
     num_train_epochs=epochs,
 )
 
