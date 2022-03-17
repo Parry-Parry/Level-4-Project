@@ -11,14 +11,14 @@ import pickle
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
 
 ### CALLBACKS ###
-
+"""
 metric = load_metric("bleu", "rouge", "meteor")
 
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
     return metric.compute(predictions=predictions, references=labels)
-
+"""
 ### DATASET PREP ###
 
 def tokenize_function(set):
@@ -43,7 +43,7 @@ valid_set = tokenized_valid.shuffle()
 
 ### ARGS ###
 
-batch_size = 64
+batch_size = 8
 epochs = 4
 lr = 4e-4
 
@@ -76,7 +76,7 @@ trainer = Seq2SeqTrainer(
     eval_dataset=valid_set,
     tokenizer=tokenizer,
     data_collator=data_collator,
-    compute_metrics=compute_metrics
+    #compute_metrics=compute_metrics
 )
 
 trainer.train()
