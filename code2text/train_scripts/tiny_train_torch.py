@@ -50,7 +50,7 @@ valid_set = tokenized_valid.shuffle()
 
 ### ARGS ###
 
-batch_size = 64
+batch_size = 8
 epochs = 4
 lr = 4e-4
 
