@@ -13,11 +13,6 @@ os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]="true"
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 
-if len(gpus) > 1:   
-    strategy = tf.distribute.MirroredStrategy()
-else:
-    strategy =  tf.distribute.get_strategy()
-
 ### TOKENIZER ###
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
@@ -73,24 +68,24 @@ num_train_steps = len(train)
 
 ### TRAINING ###
 
-with strategy.scope():
 
-    model = TFAutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspace/l4project/medsmallbert", 
+
+model = TFAutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspace/l4project/medsmallbert", 
     pad_token_id=1, 
     bos_token_id = 0, 
     eos_token_id = 2, 
     decoder_start_token_id = 0)
 
-    optimizer, lr_schedule = create_optimizer(
-        init_lr=lr,
-        num_train_steps=num_train_steps,
-        weight_decay_rate=0.01,
-        num_warmup_steps=0,
-    )
+optimizer, lr_schedule = create_optimizer(
+    init_lr=lr,
+    num_train_steps=num_train_steps,
+    weight_decay_rate=0.01,
+    num_warmup_steps=0,
+)
 
-    model.compile(
-        optimizer=optimizer
-    )
+model.compile(
+    optimizer=optimizer
+)
 
 data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, return_tensors="tf")
 
@@ -104,11 +99,6 @@ valid_set = valid.to_tf_dataset(
                     shuffle=True,
                     batch_size=batch_size,
                     collate_fn=data_collator)
-
-options = tf.data.Options()
-options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
-train_set = train_set.with_options(options)   
-valid_set = valid_set.with_options(options)    
 
 rouge_callback = KerasMetricCallback(rouge_fn, eval_dataset=valid_set)
 
