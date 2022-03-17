@@ -50,6 +50,7 @@ lr = 4e-4
 ### TRAINING ###
 
 model = AutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspace/l4project/models/tiny/model", 
+    from_tf=True,
     pad_token_id=1, 
     bos_token_id = 0, 
     eos_token_id = 2, 
