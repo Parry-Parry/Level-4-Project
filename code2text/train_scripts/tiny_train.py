@@ -13,7 +13,7 @@ os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]="true"
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 
-if len(gpus) > 1:   
+if len(gpus) > 3:   
     strategy = tf.distribute.MirroredStrategy()
 else:
     strategy =  tf.distribute.get_strategy()
