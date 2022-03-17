@@ -1,3 +1,5 @@
+import torch
+import transformers
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, Seq2SeqTrainer
 from datasets import load_dataset, load_metric
 
@@ -5,6 +7,11 @@ import os
 import pandas as pd 
 import numpy as np 
 import pickle
+
+### MODEL INIT ###
+
+tmp = transformers.EncoderDecoderModel.from_encoder_decoder_pretrained("nyu-mll/roberta-med-small-1M-1", "nyu-mll/roberta-med-small-1M-1")
+tmp.save_pretrained("small_model")
 
 ### TOKENIZER ###
 
@@ -49,7 +56,7 @@ lr = 4e-4
 
 ### TRAINING ###
 
-model = AutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspace/l4project/models/small/model", 
+model = AutoModelForSeq2SeqLM.from_pretrained("small_model", 
     pad_token_id=1, 
     bos_token_id = 0, 
     eos_token_id = 2, 
