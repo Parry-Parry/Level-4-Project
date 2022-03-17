@@ -73,16 +73,16 @@ model = TFAutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspac
     bos_token_id = 0, 
     eos_token_id = 2, 
     decoder_start_token_id = 0)
-
+"""
 optimizer, lr_schedule = create_optimizer(
     init_lr=lr,
     num_train_steps=num_train_steps,
     weight_decay_rate=0.01,
     num_warmup_steps=0,
 )
-
+"""
 model.compile(
-    optimizer=optimizer
+    optimizer=tf.keras.optimizers.Adam(learning_rate=lr)
 )
 
 data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, return_tensors="tf")

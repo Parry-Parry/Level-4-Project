@@ -82,7 +82,7 @@ optimizer, lr_schedule = create_optimizer(
 )
 
 model.compile(
-    optimizer=optimizer
+    optimizer=tf.keras.optimizers.Adam(learning_rate=lr)
 )
 
 data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, return_tensors="tf")
