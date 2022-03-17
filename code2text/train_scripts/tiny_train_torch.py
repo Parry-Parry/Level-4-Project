@@ -11,14 +11,14 @@ import pickle
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
 
 ### CALLBACKS ###
-
+"""
 metric = load_metric("bleu", "rouge", "meteor")
 
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
     return metric.compute(predictions=predictions, references=labels)
-
+"""
 ### DATASET PREP ###
 
 def tokenize_function(set):
