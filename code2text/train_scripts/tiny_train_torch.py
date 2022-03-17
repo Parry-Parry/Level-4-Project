@@ -76,7 +76,7 @@ trainer = Seq2SeqTrainer(
     eval_dataset=valid_set,
     tokenizer=tokenizer,
     data_collator=data_collator,
-    compute_metrics=compute_metrics
+    #compute_metrics=compute_metrics
 )
 
 trainer.train()
