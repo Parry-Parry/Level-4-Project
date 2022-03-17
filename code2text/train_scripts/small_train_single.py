@@ -60,7 +60,7 @@ valid = tokenized_valid.shuffle()
 ### ARGS ###
 
 buffer = 512
-batch_size = 64
+batch_size = 8
 epochs = 4
 lr = 4e-4
 num_train_steps = len(train)
