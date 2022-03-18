@@ -50,8 +50,8 @@ valid_set = tokenized_valid.shuffle()
 
 ### ARGS ###
 
-batch_size = 8
-epochs = 4
+batch_size = 4
+epochs = 6
 lr = 4e-4
 
 ### TRAINING ###
@@ -72,7 +72,8 @@ training_args = Seq2SeqTrainingArguments(
     per_device_eval_batch_size=batch_size,
     weight_decay=0.01,
     save_total_limit=3,
-    num_train_epochs=epochs
+    save_steps=10000,
+    num_train_epochs=epochs,
 )
 
 trainer = Seq2SeqTrainer(

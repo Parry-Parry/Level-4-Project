@@ -51,7 +51,7 @@ valid_set = tokenized_valid.shuffle()
 ### ARGS ###
 
 batch_size = 8
-epochs = 4
+epochs = 6
 lr = 4e-4
 
 ### TRAINING ###

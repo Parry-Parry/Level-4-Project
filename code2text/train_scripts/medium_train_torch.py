@@ -1,3 +1,5 @@
+import torch
+import transformers
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, Seq2SeqTrainer
 from datasets import load_dataset, load_metric
 
@@ -6,19 +8,24 @@ import pandas as pd
 import numpy as np 
 import pickle
 
+### MDOEL INIT ###
+
+model = transformers.EncoderDecoderModel.from_encoder_decoder_pretrained("distilroberta-base", "distilroberta-base")
+model.save_pretrained("medium_model")
+
 ### TOKENIZER ###
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
 
 ### CALLBACKS ###
-
+"""
 metric = load_metric("bleu", "rouge", "meteor")
 
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
     return metric.compute(predictions=predictions, references=labels)
-
+"""
 ### DATASET PREP ###
 
 def tokenize_function(set):
@@ -43,13 +50,13 @@ valid_set = tokenized_valid.shuffle()
 
 ### ARGS ###
 
-batch_size = 64
-epochs = 4
+batch_size = 4
+epochs = 6
 lr = 4e-4
 
 ### TRAINING ###
 
-model = AutoModelForSeq2SeqLM.from_pretrained("/users/level4/2393265p/workspace/l4project/models/medium/model", 
+model = AutoModelForSeq2SeqLM.from_pretrained("medium_model", 
     pad_token_id=1, 
     bos_token_id = 0, 
     eos_token_id = 2, 
@@ -65,8 +72,8 @@ training_args = Seq2SeqTrainingArguments(
     per_device_eval_batch_size=batch_size,
     weight_decay=0.01,
     save_total_limit=3,
+    save_steps=10000,
     num_train_epochs=epochs,
-    fp16=True,
 )
 
 trainer = Seq2SeqTrainer(
@@ -76,7 +83,7 @@ trainer = Seq2SeqTrainer(
     eval_dataset=valid_set,
     tokenizer=tokenizer,
     data_collator=data_collator,
-    compute_metrics=compute_metrics
+    #compute_metrics=compute_metrics
 )
 
 trainer.train()
