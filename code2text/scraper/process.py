@@ -19,7 +19,6 @@ class dataprocessor():
     def get_function_definitions(self, filepath: str):
         try:
             with open(filepath) as source_code:
-                print("reading")
                 blob = source_code.read()
             tree = self.PARSER.parse(blob.encode())
             return self.lang_parser.get_definition(tree, blob)
@@ -45,7 +44,7 @@ def extract(path, file_type):
     processor = dataprocessor(lang, LANGUAGE_METADATA[file_type]['language_parser'])
 
     functions = []
-    
+    print("scanning...")
     for root, _, files in os.walk(path):
         for file in files:
             source = os.path.join(root, file)
@@ -63,6 +62,12 @@ def main(path, out, file_type):
 
 
 if __name__ == "__main__":
+    """
+    args:
+        1 : in path to scan
+        2 : write path, should be json file
+        3 : language type e.g python or java
+    """
     if len(sys.argv) < 4:
         print("Too few args, provide in path, out path, type")
         sys.exit(2)

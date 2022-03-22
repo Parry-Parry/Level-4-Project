@@ -1,12 +1,14 @@
 import torch
 import transformers
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, Seq2SeqTrainer
-from datasets import load_dataset, load_metric
+import datasets
+from datasets import load_dataset
 
 import os
 import pandas as pd 
 import numpy as np 
 import pickle
+
 
 ### MODEL INIT ###
 
@@ -17,15 +19,50 @@ tmp.save_pretrained("small_model")
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
 
-### CALLBACKS ###
-"""
-metric = load_metric("bleu", "rouge", "meteor")
+### EVAL METRICS ###
 
-def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    predictions = np.argmax(logits, axis=-1)
-    return metric.compute(predictions=predictions, references=labels)
-"""
+bleu = datasets.load_metric('bleu')
+rouge = datasets.load_metric('rouge')
+meteor = datasets.load_metric('meteor')
+
+def compute_metrics(pred):
+    labels_ids = pred.label_ids
+    pred_ids = pred.predictions
+
+    labels_ids[labels_ids == -100] = tokenizer.pad_token_id
+
+    pred_str = tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
+    label_str = tokenizer.batch_decode(labels_ids, skip_special_tokens=True)
+
+    rouge_output = rouge.compute(predictions=pred_str, references=label_str, rouge_types=["rouge2"])["rouge2"].mid
+    bleu_output = bleu.compute(predictions=pred_str, references=label_str)
+    meteor_output = meteor.compute(predictions=pred_str, references=label_str)
+
+    return {
+        "rouge2_precision": round(rouge_output.precision, 4),
+        "rouge2_recall": round(rouge_output.recall, 4),
+        "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
+        "bleu_score" : bleu_output,
+        "meteor_score" : meteor_output
+    }
+
+def eval_compute(results):
+    predictions=results["pred_string"] 
+    references=results["docstring"]
+
+    rouge_output = rouge.compute(predictions=predictions, references=label_str, rouge_types=["rouge2"])["rouge2"].mid
+    bleu_output = bleu.compute(predictions=pred_str, references=label_str)
+    meteor_output = meteor.compute(predictions=pred_str, references=label_str)
+
+    return {
+        "rouge2_precision": round(rouge_output.precision, 4),
+        "rouge2_recall": round(rouge_output.recall, 4),
+        "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
+        "bleu_score" : bleu_output,
+        "meteor_score" : meteor_output
+    }
+
+
 ### DATASET PREP ###
 
 def tokenize_function(set):
@@ -35,22 +72,32 @@ def tokenize_function(set):
 
     inputs["labels"] = labels["input_ids"]
 
+    inputs["labels"] = [[-100 if token == tokenizer.pad_token_id else token for token in labels] for labels in inputs["labels"]]
+
     return inputs
 
 ### LOAD DATA ###
 
 train = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/pyjava/train.jsonl")["train"]
 valid = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/pyjava/valid.jsonl")["train"]
+test = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/pyjava/test.jsonl")["train"]
 
-tokenized_train = train.map(tokenize_function, batched=True)
-tokenized_valid = valid.map(tokenize_function, batched=True)
+tokenized_train = train.map(tokenize_function, batched=True, remove_columns=train.column_names)
+tokenized_valid = valid.map(tokenize_function, batched=True, remove_columns=valid_set.column_names)
 
 train_set = tokenized_train.shuffle()
 valid_set = tokenized_valid.shuffle()
 
+train_set.set_format(
+    type="torch", columns=["input_ids", "attention_mask", "decoder_input_ids", "decoder_attention_mask", "labels"],
+)
+valid_set.set_format(
+    type="torch", columns=["input_ids", "attention_mask", "decoder_input_ids", "decoder_attention_mask", "labels"],
+)
+
 ### ARGS ###
 
-batch_size = 4
+batch_size = 8
 epochs = 6
 lr = 4e-4
 
@@ -60,20 +107,27 @@ model = AutoModelForSeq2SeqLM.from_pretrained("small_model",
     pad_token_id=1, 
     bos_token_id = 0, 
     eos_token_id = 2, 
-    decoder_start_token_id = 0)
+    decoder_start_token_id = 0, 
+    num_beams = 4)
 
 data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model)
 
 training_args = Seq2SeqTrainingArguments(
     output_dir="/users/level4/2393265p/workspace/l4project/models/small/model_trained",
+    predict_with_generate=True,
     evaluation_strategy="epoch",
     learning_rate=lr,
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=batch_size,
+    evaluate_during_training=True,
+    do_train=True,
+    do_eval=True,
     weight_decay=0.01,
     save_total_limit=1,
     save_steps=10000,
     num_train_epochs=epochs,
+    logging_steps=2000,
+    overwrite_output_dir=True
 )
 
 trainer = Seq2SeqTrainer(
@@ -83,7 +137,32 @@ trainer = Seq2SeqTrainer(
     eval_dataset=valid_set,
     tokenizer=tokenizer,
     data_collator=data_collator,
-    #compute_metrics=compute_metrics
+    compute_metrics=compute_metrics
 )
 
 trainer.train()
+
+### EVALUATION ###
+
+def generate_string(batch):
+    # cut off at BERT max length 512
+    inputs = tokenizer(batch["code"], padding="max_length", truncation=True, max_length=512, return_tensors="pt")
+    input_ids = inputs.input_ids
+    attention_mask = inputs.attention_mask
+
+    outputs = model.generate(input_ids, attention_mask=attention_mask)
+
+    output_str = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+
+    batch["pred_string"] = output_str
+
+    return batch
+
+
+
+results = test.map(generate_string, batched=True, batch_size=batch_size)
+
+with open("", "wb") as f:
+    pickle.dump(results, f)
+
+trainer.save_model("/users/level4/2393265p/workspace/l4project/models/small/model_out")
