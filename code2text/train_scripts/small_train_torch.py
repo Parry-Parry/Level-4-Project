@@ -9,12 +9,6 @@ import pandas as pd
 import numpy as np 
 import pickle
 
-
-### MODEL INIT ###
-
-tmp = transformers.EncoderDecoderModel.from_encoder_decoder_pretrained("nyu-mll/roberta-med-small-1M-1", "nyu-mll/roberta-med-small-1M-1")
-tmp.save_pretrained("small_model")
-
 ### TOKENIZER ###
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
@@ -101,16 +95,22 @@ batch_size = 8
 epochs = 6
 lr = 4e-4
 
-### TRAINING ###
+### CONFIG ###
 
-model = AutoModelForSeq2SeqLM.from_pretrained("small_model", 
-    pad_token_id=1, 
-    bos_token_id = 0, 
-    eos_token_id = 2, 
-    decoder_start_token_id = 0, 
-    num_beams = 4)
+model = transformers.EncoderDecoderModel.from_encoder_decoder_pretrained("nyu-mll/roberta-med-small-1M-1", "nyu-mll/roberta-med-small-1M-1")
+
+model.config.decoder_start_token_id = tokenizer.cls_token_id
+model.config.eos_token_id = tokenizer.sep_token_id
+model.config.pad_token_id = tokenizer.pad_token_id
+model.config.vocab_size = model.config.encoder.vocab_size
+
+model.config.early_stopping = True
+model.config.length_penalty = 2.0
+model.config.num_beams = 4
 
 data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model)
+
+### TRAINING ###
 
 training_args = Seq2SeqTrainingArguments(
     output_dir="/users/level4/2393265p/workspace/l4project/models/small/model_trained",
@@ -145,7 +145,6 @@ trainer.train()
 ### EVALUATION ###
 
 def generate_string(batch):
-    # cut off at BERT max length 512
     inputs = tokenizer(batch["code"], padding="max_length", truncation=True, max_length=512, return_tensors="pt")
     input_ids = inputs.input_ids
     attention_mask = inputs.attention_mask
@@ -158,11 +157,11 @@ def generate_string(batch):
 
     return batch
 
-
-
 results = test.map(generate_string, batched=True, batch_size=batch_size)
 
-with open("", "wb") as f:
+results = eval_compute(results)
+
+with open("/users/level4/2393265p/workspace/l4project/models/small/results.pkl", "wb") as f:
     pickle.dump(results, f)
 
 trainer.save_model("/users/level4/2393265p/workspace/l4project/models/small/model_out")
