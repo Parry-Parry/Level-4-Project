@@ -49,7 +49,21 @@ def augment(row):
             pass
     return row
         
-            
+def relevance_augment(row):
+    global augments
+    potential = {}
+    code_tokens = row.code_tokens
+    code_tokens = [token for token in code_tokens if token.isalnum()]
+    for token in code_tokens:
+        try:
+            token_augment = augmenter[token]
+            if token_augment:
+                potential[token] = token_augment
+        except KeyError:
+            pass
+    
+    return row
+
 print("Augmenting...")
 for k in tqdm(dataset_frame.keys()):
     print("\nCurrent Augment: {}".format(k), flush=True)

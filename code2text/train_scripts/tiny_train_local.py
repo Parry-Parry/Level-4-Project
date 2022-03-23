@@ -28,32 +28,33 @@ def compute_metrics(pred):
     predictions = tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
     references = tokenizer.batch_decode(labels_ids, skip_special_tokens=True)
 
-    rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])
-    bleu_output = bleu.compute(predictions=predictions.split(), references=references.split())
+    rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])["rouge2"].mid
+    bleu_output = bleu.compute(predictions=[pred.split() for pred in predictions], references=[[ref.split()] for ref in references])
     meteor_output = meteor.compute(predictions=predictions, references=references)
+
 
     return {
         "rouge2_precision": round(rouge_output.precision, 4),
         "rouge2_recall": round(rouge_output.recall, 4),
         "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
-        "bleu_score" : bleu_output.bleu,
-        "meteor_score" : meteor_output.meteor
+        "bleu_score" : bleu_output["bleu"],
+        "meteor_score" : meteor_output["meteor"]
     }
 
 def eval_compute(results):
     predictions=results["pred_string"] 
     references=results["docstring"]
 
-    rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])
-    bleu_output = bleu.compute(predictions=predictions.split(), references=references.split())
+    rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])["rouge2"].mid
+    bleu_output = bleu.compute(predictions=[pred.split() for pred in predictions], references=[[ref.split()] for ref in references])
     meteor_output = meteor.compute(predictions=predictions, references=references)
 
     return {
         "rouge2_precision": round(rouge_output.precision, 4),
         "rouge2_recall": round(rouge_output.recall, 4),
         "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
-        "bleu_score" : bleu_output.bleu,
-        "meteor_score" : meteor_output.meteor
+        "bleu_score" : bleu_output["bleu"],
+        "meteor_score" : meteor_output["meteor"]
     }
 
 
@@ -127,7 +128,7 @@ training_args = Seq2SeqTrainingArguments(
     save_total_limit=1,
     save_steps=10000,
     num_train_epochs=epochs,
-    logging_steps=2000,
+    logging_steps=2000
     overwrite_output_dir=True
 )
 
@@ -149,13 +150,9 @@ def generate_string(batch):
     inputs = tokenizer(batch["code"], padding="max_length", truncation=True, max_length=512, return_tensors="pt")
     input_ids = inputs.input_ids
     attention_mask = inputs.attention_mask
-
     outputs = model.generate(input_ids, attention_mask=attention_mask)
-
     output_str = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-
     batch["pred_string"] = output_str
-
     return batch
 
 results = test.map(generate_string, batched=True, batch_size=batch_size)
