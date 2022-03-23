@@ -44,9 +44,9 @@ def eval_compute(results):
     predictions=results["pred_string"] 
     references=results["docstring"]
 
-    rouge_output = rouge.compute(predictions=predictions, references=label_str, rouge_types=["rouge2"])["rouge2"].mid
-    bleu_output = bleu.compute(predictions=pred_str, references=label_str)
-    meteor_output = meteor.compute(predictions=pred_str, references=label_str)
+    rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])["rouge2"].mid
+    bleu_output = bleu.compute(predictions=predictions, references=references)
+    meteor_output = meteor.compute(predictions=predictions, references=references)
 
     return {
         "rouge2_precision": round(rouge_output.precision, 4),
@@ -72,12 +72,12 @@ def tokenize_function(set):
 
 ### LOAD DATA ###
 
-train = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/pyjava/train.jsonl")["train"]
-valid = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/pyjava/valid.jsonl")["train"]
-test = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/pyjava/test.jsonl")["train"]
+train = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/py_clean/train.jsonl")["train"]
+valid = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/py_clean/valid.jsonl")["train"]
+test = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/py_clean/test.jsonl")["train"]
 
 tokenized_train = train.map(tokenize_function, batched=True, remove_columns=train.column_names)
-tokenized_valid = valid.map(tokenize_function, batched=True, remove_columns=valid_set.column_names)
+tokenized_valid = valid.map(tokenize_function, batched=True, remove_columns=valid.column_names)
 
 train_set = tokenized_train.shuffle()
 valid_set = tokenized_valid.shuffle()
