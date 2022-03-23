@@ -1,52 +1,61 @@
-import tensorflow as tf
-from transformers import KerasMetricCallback, TFAutoModelForSeq2SeqLM, AutoTokenizer, DataCollatorForSeq2Seq, create_optimizer
-from datasets import load_dataset, load_metric
+import torch
+import transformers
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, Seq2SeqTrainer
+import datasets
+from datasets import load_dataset
 
 import os
 import pandas as pd 
 import numpy as np 
 import pickle
 
-### CUDA SETUP ###
-
-os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]="true"
-#os.environ["TF_GPU_ALLOCATOR"]="cuda_malloc_async"
-
-gpus = tf.config.experimental.list_physical_devices('GPU')
-
-if len(gpus) > 1:   
-    strategy = tf.distribute.MirroredStrategy()
-else:
-    strategy =  tf.distribute.get_strategy()
-
 ### TOKENIZER ###
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
 
-### CALLBACKS ###
+### EVAL METRICS ###
 
-rouge_metric = load_metric("rouge")
+bleu = datasets.load_metric('bleu')
+rouge = datasets.load_metric('rouge')
+meteor = datasets.load_metric('meteor')
 
-def rouge_fn(predictions, labels):
-    decoded_predictions = tokenizer.batch_decode(predictions, skip_special_tokens=True)
-    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-    result = rouge_metric.compute(predictions=decoded_predictions, references=decoded_labels)
-    return {key: value.mid.fmeasure * 100 for key, value in result.items()}
+def compute_metrics(pred):
+    labels_ids = pred.label_ids
+    pred_ids = pred.predictions
 
-bleu_metric = load_metric("bleu")
+    labels_ids[labels_ids == -100] = tokenizer.pad_token_id
 
-def bleu_fn(predictions, labels):
-    decoded_predictions = tokenizer.batch_decode(predictions, skip_special_tokens=True)
-    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-    result = bleu_metric.compute(predictions=decoded_predictions, references=decoded_labels)
-    return result.items()
+    pred_str = tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
+    label_str = tokenizer.batch_decode(labels_ids, skip_special_tokens=True)
 
-### ARGS ###
+    rouge_output = rouge.compute(predictions=pred_str, references=label_str, rouge_types=["rouge2"])["rouge2"].mid
+    bleu_output = bleu.compute(predictions=pred_str, references=label_str)
+    meteor_output = meteor.compute(predictions=pred_str, references=label_str)
 
-buffer = 256
-batch_size = 4
-epochs = 4
-lr = 4e-4
+    return {
+        "rouge2_precision": round(rouge_output.precision, 4),
+        "rouge2_recall": round(rouge_output.recall, 4),
+        "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
+        "bleu_score" : bleu_output,
+        "meteor_score" : meteor_output
+    }
+
+def eval_compute(results):
+    predictions=results["pred_string"] 
+    references=results["docstring"]
+
+    rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])["rouge2"].mid
+    bleu_output = bleu.compute(predictions=predictions, references=references)
+    meteor_output = meteor.compute(predictions=predictions, references=references)
+
+    return {
+        "rouge2_precision": round(rouge_output.precision, 4),
+        "rouge2_recall": round(rouge_output.recall, 4),
+        "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
+        "bleu_score" : bleu_output,
+        "meteor_score" : meteor_output
+    }
+
 
 ### DATASET PREP ###
 
@@ -55,57 +64,105 @@ def tokenize_function(set):
     with tokenizer.as_target_tokenizer():
        labels = tokenizer(set["docstring"], max_length=512, padding="max_length", truncation=True)
 
-    inputs["labels"] = labels["input_ids"]
+    inputs["labels"] = labels["input_ids"].copy()
+    inputs["decoder_input_ids"] = labels.input_ids
+    inputs["decoder_attention_mask"] = labels.attention_mask
+
+    inputs["labels"] = [[-100 if token == tokenizer.pad_token_id else token for token in labels] for labels in inputs["labels"]]
 
     return inputs
 
-train = load_dataset('json', data_files="D:\PROJECT\data\CodeSearchNet\pyjava\\train.jsonl")["train"]
-valid = load_dataset('json', data_files="D:\PROJECT\data\CodeSearchNet\pyjava\\valid.jsonl")["train"]
+### LOAD DATA ###
 
-tokenized = train.map(tokenize_function, batched=True)
-ds = tokenized.shuffle().train_test_split(test_size=.2)
+train = load_dataset('json', data_files="D:\\PROJECT\\data\\CodeSearchNet\\py_clean\\train.jsonl")["train"]
+valid = load_dataset('json', data_files="D:\\PROJECT\\data\\CodeSearchNet\\py_clean\\valid.jsonl")["train"]
+test = load_dataset('json', data_files="D:\\PROJECT\\data\\CodeSearchNet\\py_clean\\test.jsonl")["train"]
+
+tokenized_train = train.map(tokenize_function, batched=True, remove_columns=train.column_names)
+tokenized_valid = valid.map(tokenize_function, batched=True, remove_columns=valid.column_names)
+
+train_set = tokenized_train.shuffle()
+valid_set = tokenized_valid.shuffle()
+
+train_set.set_format(
+    type="torch", columns=["input_ids", "attention_mask", "decoder_input_ids", "decoder_attention_mask", "labels"],
+)
+valid_set.set_format(
+    type="torch", columns=["input_ids", "attention_mask", "decoder_input_ids", "decoder_attention_mask", "labels"],
+)
+
+### ARGS ###
+
+batch_size = 8
+epochs = 6
+lr = 4e-4
+
+### CONFIG ###
+
+model = transformers.EncoderDecoderModel.from_encoder_decoder_pretrained("sshleifer/tiny-distilroberta-base", "sshleifer/tiny-distilroberta-base")
+
+model.config.decoder_start_token_id = tokenizer.cls_token_id
+model.config.eos_token_id = tokenizer.sep_token_id
+model.config.pad_token_id = tokenizer.pad_token_id
+model.config.vocab_size = model.config.encoder.vocab_size
+
+model.config.early_stopping = True
+model.config.length_penalty = 2.0
+model.config.num_beams = 4
+
+data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model)
 
 ### TRAINING ###
 
-with strategy.scope():
+training_args = Seq2SeqTrainingArguments(
+    output_dir="D:\\PROJECT\\out\\tiny\\model_trained",
+    predict_with_generate=True,
+    evaluation_strategy="epoch",
+    learning_rate=lr,
+    per_device_train_batch_size=batch_size,
+    per_device_eval_batch_size=batch_size,
+    do_train=True,
+    do_eval=True,
+    weight_decay=0.01,
+    save_total_limit=1,
+    save_steps=10000,
+    num_train_epochs=epochs,
+    logging_steps=2000,
+    overwrite_output_dir=True
+)
 
-    model = TFAutoModelForSeq2SeqLM.from_pretrained("D:\PROJECT\Level-4-Project\code2text\models\\tinybert", 
-    pad_token_id=1, 
-    bos_token_id = 0, 
-    eos_token_id = 2, 
-    decoder_start_token_id = 0)
+trainer = Seq2SeqTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_set,
+    eval_dataset=valid_set,
+    tokenizer=tokenizer,
+    data_collator=data_collator,
+    compute_metrics=compute_metrics
+)
 
-    data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, return_tensors="tf")
+trainer.train()
 
-    train_set = ds["train"].to_tf_dataset(
-                    columns=["input_ids", "attention_mask", "labels"],
-                    shuffle=True,
-                    batch_size=batch_size,
-                    collate_fn=data_collator)
-    valid_set = ds["test"].to_tf_dataset(
-                    columns=["input_ids", "attention_mask", "labels"],
-                    shuffle=True,
-                    batch_size=batch_size,
-                    collate_fn=data_collator)
+### EVALUATION ###
 
-    rouge_callback = KerasMetricCallback(rouge_fn, eval_dataset=valid_set)
+def generate_string(batch):
+    inputs = tokenizer(batch["code"], padding="max_length", truncation=True, max_length=512, return_tensors="pt")
+    input_ids = inputs.input_ids
+    attention_mask = inputs.attention_mask
 
-    bleu_callback = KerasMetricCallback(bleu_fn, eval_dataset=valid_set)
+    outputs = model.generate(input_ids, attention_mask=attention_mask)
 
-    num_train_steps = len(train_set) * epochs
+    output_str = tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
-    optimizer, lr_schedule = create_optimizer(
-        init_lr=lr,
-        num_train_steps=num_train_steps,
-        weight_decay_rate=0.01,
-        num_warmup_steps=0,
-    )
+    batch["pred_string"] = output_str
 
-    model.compile(
-        optimizer=optimizer
-    )
+    return batch
 
-    history = model.fit(train_set, epochs=epochs, validation_data=valid_set, callbacks=[rouge_callback, bleu_callback])
+results = test.map(generate_string, batched=True, batch_size=batch_size)
 
-pickle.dump(history, open("tiny_history.pkl", "wb"))
-model.save("model")
+results = eval_compute(results)
+
+with open("D:\\PROJECT\\out\\tiny\\results.pkl", "wb") as f:
+    pickle.dump(results, f)
+
+trainer.save_model("D:\\PROJECT\\out\\tiny\\model_out")

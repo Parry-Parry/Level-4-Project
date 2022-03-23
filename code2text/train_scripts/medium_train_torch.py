@@ -64,7 +64,9 @@ def tokenize_function(set):
     with tokenizer.as_target_tokenizer():
        labels = tokenizer(set["docstring"], max_length=512, padding="max_length", truncation=True)
 
-    inputs["labels"] = labels["input_ids"]
+    inputs["labels"] = labels["input_ids"].copy()
+    inputs["decoder_input_ids"] = labels.input_ids
+    inputs["decoder_attention_mask"] = labels.attention_mask
 
     inputs["labels"] = [[-100 if token == tokenizer.pad_token_id else token for token in labels] for labels in inputs["labels"]]
 
@@ -119,7 +121,6 @@ training_args = Seq2SeqTrainingArguments(
     learning_rate=lr,
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=batch_size,
-    evaluate_during_training=True,
     do_train=True,
     do_eval=True,
     weight_decay=0.01,
