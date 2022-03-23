@@ -46,7 +46,7 @@ def eval_compute(results):
 
     rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])
     bleu_output = bleu.compute(predictions=predictions.split(), references=references.split())
-    meteor_output = meteor.compute(predictions=predictions.split(), references=references.split())
+    meteor_output = meteor.compute(predictions=predictions, references=references)
 
     return {
         "rouge2_precision": round(rouge_output.precision, 4),
@@ -71,6 +71,7 @@ def tokenize_function(set):
     inputs["labels"] = [[-100 if token == tokenizer.pad_token_id else token for token in labels] for labels in inputs["labels"]]
 
     return inputs
+
 ### LOAD DATA ###
 
 train = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/py_clean/train.jsonl")["train"]

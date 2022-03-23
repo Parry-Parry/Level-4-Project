@@ -30,7 +30,7 @@ def compute_metrics(pred):
 
     rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])
     bleu_output = bleu.compute(predictions=predictions.split(), references=references.split())
-    meteor_output = meteor.compute(predictions=predictions.split(), references=references.split())
+    meteor_output = meteor.compute(predictions=predictions, references=references)
 
     return {
         "rouge2_precision": round(rouge_output.precision, 4),
@@ -46,7 +46,7 @@ def eval_compute(results):
 
     rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])
     bleu_output = bleu.compute(predictions=predictions.split(), references=references.split())
-    meteor_output = meteor.compute(predictions=predictions.split(), references=references.split())
+    meteor_output = meteor.compute(predictions=predictions, references=references)
 
     return {
         "rouge2_precision": round(rouge_output.precision, 4),
@@ -94,7 +94,7 @@ valid_set.set_format(
 ### ARGS ###
 
 batch_size = 8
-epochs = 1
+epochs = 6
 lr = 4e-4
 
 ### CONFIG ###
