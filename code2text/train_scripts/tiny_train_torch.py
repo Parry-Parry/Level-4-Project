@@ -28,32 +28,32 @@ def compute_metrics(pred):
     pred_str = tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
     label_str = tokenizer.batch_decode(labels_ids, skip_special_tokens=True)
 
-    rouge_output = rouge.compute(predictions=pred_str, references=label_str, rouge_types=["rouge2"])["rouge2"].mid
-    bleu_output = bleu.compute(predictions=pred_str, references=label_str)
-    meteor_output = meteor.compute(predictions=pred_str, references=label_str)
+    rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])
+    bleu_output = bleu.compute(predictions=predictions.split(), references=references.split())
+    meteor_output = meteor.compute(predictions=predictions.split(), references=references.split())
 
     return {
         "rouge2_precision": round(rouge_output.precision, 4),
         "rouge2_recall": round(rouge_output.recall, 4),
         "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
-        "bleu_score" : bleu_output,
-        "meteor_score" : meteor_output
+        "bleu_score" : bleu_output.bleu,
+        "meteor_score" : meteor_output.meteor
     }
 
 def eval_compute(results):
     predictions=results["pred_string"] 
     references=results["docstring"]
 
-    rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])["rouge2"].mid
-    bleu_output = bleu.compute(predictions=predictions, references=references)
-    meteor_output = meteor.compute(predictions=predictions, references=references)
+    rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])
+    bleu_output = bleu.compute(predictions=predictions.split(), references=references.split())
+    meteor_output = meteor.compute(predictions=predictions.split(), references=references.split())
 
     return {
         "rouge2_precision": round(rouge_output.precision, 4),
         "rouge2_recall": round(rouge_output.recall, 4),
         "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
-        "bleu_score" : bleu_output,
-        "meteor_score" : meteor_output
+        "bleu_score" : bleu_output.bleu,
+        "meteor_score" : meteor_output.meteor
     }
 
 
@@ -92,7 +92,7 @@ valid_set.set_format(
 ### ARGS ###
 
 batch_size = 16
-epochs = 6
+epochs = 1
 lr = 4e-4
 
 ### CONFIG ###
@@ -115,11 +115,10 @@ data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model)
 training_args = Seq2SeqTrainingArguments(
     output_dir="/users/level4/2393265p/workspace/l4project/models/tiny/model_trained",
     predict_with_generate=True,
-    evaluation_strategy="epoch",
+    evaluation_strategy="steps",
     learning_rate=lr,
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=batch_size,
-    evaluate_during_training=True,
     do_train=True,
     do_eval=True,
     weight_decay=0.01,
