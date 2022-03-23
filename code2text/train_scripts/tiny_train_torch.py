@@ -158,6 +158,8 @@ def generate_string(batch):
 
     return batch
 
+trainer.save_model("/users/level4/2393265p/workspace/l4project/models/tiny/model_out")
+
 results = test.map(generate_string, batched=True, batch_size=batch_size)
 
 results = eval_compute(results)
@@ -165,4 +167,4 @@ results = eval_compute(results)
 with open("/users/level4/2393265p/workspace/l4project/models/tiny/results.pkl", "wb") as f:
     pickle.dump(results, f)
 
-trainer.save_model("/users/level4/2393265p/workspace/l4project/models/tiny/model_out")
+

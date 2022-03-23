@@ -28,8 +28,9 @@ def compute_metrics(pred):
     predictions = tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
     references = tokenizer.batch_decode(labels_ids, skip_special_tokens=True)
 
+
     rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])
-    bleu_output = bleu.compute(predictions=predictions.split(), references=references.split())
+    bleu_output = bleu.compute(predictions=[prediction.split() for prediction in predictions], references=[reference.split() for reference in references])
     meteor_output = meteor.compute(predictions=predictions, references=references)
 
     return {
@@ -154,6 +155,8 @@ def generate_string(batch):
     batch["pred_string"] = output_str
     return batch
 
+trainer.save_model("/users/level4/2393265p/workspace/l4project/models/medium/model_out")
+
 results = test.map(generate_string, batched=True, batch_size=batch_size)
 
 results = eval_compute(results)
@@ -161,4 +164,4 @@ results = eval_compute(results)
 with open("/users/level4/2393265p/workspace/l4project/models/medium/results.pkl", "wb") as f:
     pickle.dump(results, f)
 
-trainer.save_model("/users/level4/2393265p/workspace/l4project/models/medium/model_out")
+
