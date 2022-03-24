@@ -15,7 +15,7 @@ tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
 
 ### EVAL METRICS ###
 
-bleu = datasets.load_metric('bleu')
+#bleu = datasets.load_metric('bleu')
 rouge = datasets.load_metric('rouge')
 meteor = datasets.load_metric('meteor')
 
@@ -29,7 +29,7 @@ def compute_metrics(pred):
     references = tokenizer.batch_decode(labels_ids, skip_special_tokens=True)
 
     rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])["rouge2"].mid
-    bleu_output = bleu.compute(predictions=[pred.split() for pred in predictions], references=[[ref.split()] for ref in references])
+    #bleu_output = bleu.compute(predictions=[pred.split() for pred in predictions], references=[[ref.split()] for ref in references])
     meteor_output = meteor.compute(predictions=predictions, references=references)
 
 
@@ -37,7 +37,7 @@ def compute_metrics(pred):
         "rouge2_precision": round(rouge_output.precision, 4),
         "rouge2_recall": round(rouge_output.recall, 4),
         "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
-        "bleu_score" : bleu_output["bleu"],
+        #"bleu_score" : bleu_output["bleu"],
         "meteor_score" : meteor_output["meteor"]
     }
 
@@ -46,14 +46,14 @@ def eval_compute(results):
     references=results["docstring"]
 
     rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])["rouge2"].mid
-    bleu_output = bleu.compute(predictions=[pred.split() for pred in predictions], references=[[ref.split()] for ref in references])
+    #bleu_output = bleu.compute(predictions=[pred.split() for pred in predictions], references=[[ref.split()] for ref in references])
     meteor_output = meteor.compute(predictions=predictions, references=references)
 
     return {
         "rouge2_precision": round(rouge_output.precision, 4),
         "rouge2_recall": round(rouge_output.recall, 4),
         "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
-        "bleu_score" : bleu_output["bleu"],
+        #"bleu_score" : bleu_output["bleu"],
         "meteor_score" : meteor_output["meteor"]
     }
 
@@ -128,7 +128,7 @@ training_args = Seq2SeqTrainingArguments(
     save_total_limit=1,
     save_steps=10000,
     num_train_epochs=epochs,
-    logging_steps=2000
+    logging_steps=2000,
     overwrite_output_dir=True
 )
 
