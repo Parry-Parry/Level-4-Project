@@ -8,12 +8,15 @@ from tqdm import tqdm
 
 from datasets import load_metric
 
+MAX_AUG = 2
+
+bleu = load_metric("sacrebleu")
 
 langs = ["python", "java"]
 #augment_paths = {'python' : "D:\\PROJECT\\Level-4-Project\\code2text\\augment\\aug.jsonl", 'java' : "D:\PROJECT\Augments\java.jsonl"}
 augment_path = "D:\\PROJECT\\Augments\\aug.jsonl"
 dataset_path = "D:\PROJECT\data\CodeSearchNet\python"
-out_path = "D:\PROJECT\data\CodeSearchNet\\aug_python"
+out_path = "D:\PROJECT\data\CodeSearchNet\\aug_python_bleu"
 filenames = ["train", "test", "valid"]
 
 # LOAD DATA
@@ -38,6 +41,7 @@ print("number of potential augmentations: ", len(augment_frame))
 
 # AUGMENT
 augments = 0
+per_block = []
 def augment(row):
     global augments
     code_tokens = row.code_tokens
@@ -55,17 +59,34 @@ def augment(row):
 def relevance_augment(row):
     global augments
     potential = []
+    candidate_scores = {}
     code_tokens = row.code_tokens
     code_tokens = [token for token in code_tokens if token.isalnum()]
     for token in code_tokens:
         try:
             token_augment = augmenter[token]
             if token_augment:
-                potential.append({token: token_augment})
+                potential.append(token_augment['docstring'])
         except KeyError:
             pass
-    if len(potential) > 2:
-        print(potential)
+    if potential:
+        for string in potential:
+            score = bleu.compute(predictions=[string], references=[[row["docstring"]]])["score"]
+            candidate_scores[score] = string
+
+        scores = list(candidate_scores.keys())
+        scores.sort(reverse=True)
+
+        if len(scores) > MAX_AUG:
+            scores = scores[:MAX_AUG]
+        augment_strings = [candidate_scores[score] for score in scores]
+
+        for aug in augment_strings:
+            row.docstring += "\n" + aug
+            augments += 1
+        per_block.append(len(augment_strings))
+    else:
+        per_block.append(0)
     return row
 
 print("Augmenting...")
