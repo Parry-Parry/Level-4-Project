@@ -95,7 +95,7 @@ valid_set.set_format(
 ### ARGS ###
 
 batch_size = 8
-epochs = 6
+epochs = 12
 lr = 4e-4
 
 ### CONFIG ###
@@ -124,7 +124,6 @@ training_args = Seq2SeqTrainingArguments(
     per_device_eval_batch_size=batch_size,
     do_train=True,
     do_eval=True,
-    weight_decay=0.01,
     save_total_limit=1,
     save_steps=10000,
     num_train_epochs=epochs,
@@ -148,8 +147,8 @@ trainer.train()
 
 def generate_string(batch):
     inputs = tokenizer(batch["code"], padding="max_length", truncation=True, max_length=512, return_tensors="pt")
-    input_ids = inputs.input_ids
-    attention_mask = inputs.attention_mask
+    input_ids = inputs.input_ids.cuda()
+    attention_mask = inputs.attention_mask.cuda()
     outputs = model.generate(input_ids, attention_mask=attention_mask)
     output_str = tokenizer.batch_decode(outputs, skip_special_tokens=True)
     batch["pred_string"] = output_str

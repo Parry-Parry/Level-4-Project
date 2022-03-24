@@ -15,7 +15,7 @@ tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
 
 ### EVAL METRICS ###
 
-#bleu = datasets.load_metric('bleu')
+bleu = datasets.load_metric('sacrebleu')
 rouge = datasets.load_metric('rouge')
 meteor = datasets.load_metric('meteor')
 
@@ -29,7 +29,7 @@ def compute_metrics(pred):
     references = tokenizer.batch_decode(labels_ids, skip_special_tokens=True)
 
     rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])["rouge2"].mid
-    #bleu_output = bleu.compute(predictions=[pred.split() for pred in predictions], references=[[ref.split()] for ref in references])
+    bleu_output = bleu.compute(predictions=predictions, references=[[ref] for ref in references])
     meteor_output = meteor.compute(predictions=predictions, references=references)
 
 
@@ -37,7 +37,7 @@ def compute_metrics(pred):
         "rouge2_precision": round(rouge_output.precision, 4),
         "rouge2_recall": round(rouge_output.recall, 4),
         "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
-        #"bleu_score" : bleu_output["bleu"],
+        "bleu_score" : bleu_output["score"],
         "meteor_score" : meteor_output["meteor"]
     }
 
@@ -46,14 +46,14 @@ def eval_compute(results):
     references=results["docstring"]
 
     rouge_output = rouge.compute(predictions=predictions, references=references, rouge_types=["rouge2"])["rouge2"].mid
-    #bleu_output = bleu.compute(predictions=[pred.split() for pred in predictions], references=[[ref.split()] for ref in references])
+    bleu_output = bleu.compute(predictions=predictions, references=[[ref] for ref in references])
     meteor_output = meteor.compute(predictions=predictions, references=references)
 
     return {
         "rouge2_precision": round(rouge_output.precision, 4),
         "rouge2_recall": round(rouge_output.recall, 4),
         "rouge2_fmeasure": round(rouge_output.fmeasure, 4),
-        #"bleu_score" : bleu_output["bleu"],
+        "bleu_score" : bleu_output["score"],
         "meteor_score" : meteor_output["meteor"]
     }
 
@@ -95,7 +95,7 @@ valid_set.set_format(
 ### ARGS ###
 
 batch_size = 8
-epochs = 6
+epochs = 12
 lr = 4e-4
 
 ### CONFIG ###
@@ -124,7 +124,6 @@ training_args = Seq2SeqTrainingArguments(
     per_device_eval_batch_size=batch_size,
     do_train=True,
     do_eval=True,
-    weight_decay=0.01,
     save_total_limit=1,
     save_steps=10000,
     num_train_epochs=epochs,
@@ -148,12 +147,14 @@ trainer.train()
 
 def generate_string(batch):
     inputs = tokenizer(batch["code"], padding="max_length", truncation=True, max_length=512, return_tensors="pt")
-    input_ids = inputs.input_ids
-    attention_mask = inputs.attention_mask
+    input_ids = inputs.input_ids.cuda()
+    attention_mask = inputs.attention_mask.cuda()
     outputs = model.generate(input_ids, attention_mask=attention_mask)
     output_str = tokenizer.batch_decode(outputs, skip_special_tokens=True)
     batch["pred_string"] = output_str
     return batch
+
+trainer.save_model("D:\\PROJECT\\out\\tiny\\model_out")
 
 results = test.map(generate_string, batched=True, batch_size=batch_size)
 
@@ -162,4 +163,4 @@ results = eval_compute(results)
 with open("D:\\PROJECT\\out\\tiny\\results.pkl", "wb") as f:
     pickle.dump(results, f)
 
-trainer.save_model("D:\\PROJECT\\out\\tiny\\model_out")
+

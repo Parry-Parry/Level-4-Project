@@ -1,14 +1,17 @@
 from collections import defaultdict
 import os
 import re
+
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
+from datasets import load_metric
+
 
 langs = ["python", "java"]
 #augment_paths = {'python' : "D:\\PROJECT\\Level-4-Project\\code2text\\augment\\aug.jsonl", 'java' : "D:\PROJECT\Augments\java.jsonl"}
-augment_path = "D:\\PROJECT\\Level-4-Project\\code2text\\augment\\aug.jsonl"
+augment_path = "D:\\PROJECT\\Augments\\aug.jsonl"
 dataset_path = "D:\PROJECT\data\CodeSearchNet\python"
 out_path = "D:\PROJECT\data\CodeSearchNet\\aug_python"
 filenames = ["train", "test", "valid"]
@@ -51,23 +54,24 @@ def augment(row):
         
 def relevance_augment(row):
     global augments
-    potential = {}
+    potential = []
     code_tokens = row.code_tokens
     code_tokens = [token for token in code_tokens if token.isalnum()]
     for token in code_tokens:
         try:
             token_augment = augmenter[token]
             if token_augment:
-                potential[token] = token_augment
+                potential.append({token: token_augment})
         except KeyError:
             pass
-    
+    if len(potential) > 2:
+        print(potential)
     return row
 
 print("Augmenting...")
 for k in tqdm(dataset_frame.keys()):
     print("\nCurrent Augment: {}".format(k), flush=True)
-    dataset_frame[k] = dataset_frame[k].apply(lambda x : augment(x), axis=1)
+    dataset_frame[k] = dataset_frame[k].apply(lambda x : relevance_augment(x), axis=1)
 print("{} Augments Applied".format(augments))
 print("Saving...")
 for k, v in dataset_frame.items():
