@@ -9,6 +9,7 @@ from tqdm import tqdm
 from datasets import load_metric
 
 MAX_AUG = 2
+BLEU_THRESHOLD = 5.0
 
 bleu = load_metric("sacrebleu")
 
@@ -16,7 +17,7 @@ langs = ["python", "java"]
 #augment_paths = {'python' : "D:\\PROJECT\\Level-4-Project\\code2text\\augment\\aug.jsonl", 'java' : "D:\PROJECT\Augments\java.jsonl"}
 augment_path = "D:\\PROJECT\\Augments\\aug.jsonl"
 dataset_path = "D:\PROJECT\data\CodeSearchNet\python"
-out_path = "D:\PROJECT\data\CodeSearchNet\\aug_python_bleu"
+out_path = "D:\PROJECT\data\CodeSearchNet\\aug_python_bleu_filter"
 filenames = ["train", "test", "valid"]
 
 # LOAD DATA
@@ -33,29 +34,14 @@ def augment_dict(df):
     return df.to_dict('index', into=dd) 
 
 print("Dictionary Build...")
-#augment_dicts = {lang : augment_dict(augment_frame[lang]) for lang in langs}
 augment_frame = pd.read_json(augment_path, lines=True)
 augment_frame = augment_frame.drop_duplicates(subset='code', keep="first")
 augmenter = augment_dict(augment_frame)
 print("number of potential augmentations: ", len(augment_frame))
 
 # AUGMENT
-augments = 0
 per_block = []
-def augment(row):
-    global augments
-    code_tokens = row.code_tokens
-    code_tokens = [token for token in code_tokens if token.isalnum()]
-    for token in code_tokens:
-        try:
-            token_augment = augmenter[token]
-            if token_augment:
-                row.docstring += "\n" + token_augment['docstring']
-                augments += 1
-        except KeyError:
-            pass
-    return row
-        
+      
 def relevance_augment(row):
     global augments
     potential = []
@@ -79,11 +65,10 @@ def relevance_augment(row):
 
         if len(scores) > MAX_AUG:
             scores = scores[:MAX_AUG]
-        augment_strings = [candidate_scores[score] for score in scores]
+        augment_strings = [candidate_scores[score] for score in scores if score > BLEU_THRESHOLD]
 
         for aug in augment_strings:
             row.docstring += "\n" + aug
-            augments += 1
         per_block.append(len(augment_strings))
     else:
         per_block.append(0)
@@ -93,7 +78,9 @@ print("Augmenting...")
 for k in tqdm(dataset_frame.keys()):
     print("\nCurrent Augment: {}".format(k), flush=True)
     dataset_frame[k] = dataset_frame[k].apply(lambda x : relevance_augment(x), axis=1)
-print("{} Augments Applied".format(augments))
-print("Saving...")
-for k, v in dataset_frame.items():
-    v.to_json(os.path.join(out_path, k + ".jsonl"), orient='records', lines=True)
+    print("Saving...")
+    dataset_frame[k].to_json(os.path.join(out_path, k + ".jsonl"), orient='records', lines=True)
+print("{} Augments Applied".format(np.sum(per_block)))
+print("{} Average Augments per Block".format(np.mean(per_block)))
+exit()
+    
