@@ -103,7 +103,7 @@ lr = 4e-4
 
 ### CONFIG ###
 
-model = transformers.EncoderDecoderModel.from_encoder_decoder_pretrained("nyu-mll/roberta-med-small-1M-1", "nyu-mll/roberta-med-small-1M-1")
+model = transformers.EncoderDecoderModel.from_encoder_decoder_pretrained("distilroberta-base", "distilroberta-base")
 
 model.config.decoder_start_token_id = tokenizer.cls_token_id
 model.config.eos_token_id = tokenizer.sep_token_id
