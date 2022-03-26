@@ -11,7 +11,7 @@ import pickle
 
 ### TOKENIZER ###
 
-tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
+tokenizer = AutoTokenizer.from_pretrained("nyu-mll/roberta-med-small-1M-1")
 
 ### EVAL METRICS ###
 

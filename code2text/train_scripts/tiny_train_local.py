@@ -11,7 +11,7 @@ import pickle
 
 ### TOKENIZER ###
 
-tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
+tokenizer = AutoTokenizer.from_pretrained("sshleifer/tiny-distilroberta-base")
 
 ### EVAL METRICS ###
 
