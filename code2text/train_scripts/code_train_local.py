@@ -60,9 +60,6 @@ def eval_compute(results):
 
 ### DATASET PREP ###
 
-
-### DATASET PREP ###
-
 def tokenize_function(set):
     inputs = tokenizer(set["code"], max_length=512, padding="max_length", truncation=True)
     with tokenizer.as_target_tokenizer():
@@ -78,9 +75,9 @@ def tokenize_function(set):
 
 ### LOAD DATA ###
 
-train = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/py_clean/train.jsonl")["train"]
-valid = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/py_clean/valid.jsonl")["train"]
-test = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/py_clean/test.jsonl")["train"]
+train = load_dataset('json', data_files="D:\\PROJECT\\data\\CodeSearchNet\\py_clean\\train.jsonl")["train"]
+valid = load_dataset('json', data_files="D:\\PROJECT\\data\\CodeSearchNet\\py_clean\\valid.jsonl")["train"]
+test = load_dataset('json', data_files="D:\\PROJECT\\data\\CodeSearchNet\\py_clean\\test.jsonl")["train"]
 
 tokenized_train = train.map(tokenize_function, batched=True, remove_columns=train.column_names)
 tokenized_valid = valid.map(tokenize_function, batched=True, remove_columns=valid.column_names)
@@ -98,7 +95,7 @@ valid_set.set_format(
 ### ARGS ###
 
 batch_size = 8
-epochs = 12
+epochs = 6
 lr = 4e-4
 
 ### CONFIG ###
@@ -119,7 +116,7 @@ data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model)
 ### TRAINING ###
 
 training_args = Seq2SeqTrainingArguments(
-    output_dir="/users/level4/2393265p/workspace/l4project/models/medium/model_trained",
+    output_dir="D:\\PROJECT\\out\\code\\model_trained",
     predict_with_generate=True,
     evaluation_strategy="epoch",
     learning_rate=lr,
@@ -157,13 +154,13 @@ def generate_string(batch):
     batch["pred_string"] = output_str
     return batch
 
-trainer.save_model("/users/level4/2393265p/workspace/l4project/models/medium/model_out")
+trainer.save_model("D:\\PROJECT\\out\\code\\model_out")
 
 results = test.map(generate_string, batched=True, batch_size=batch_size)
 
 results = eval_compute(results)
 
-with open("/users/level4/2393265p/workspace/l4project/models/medium/results.pkl", "wb") as f:
+with open("D:\\PROJECT\\out\\code\\results.pkl", "wb") as f:
     pickle.dump(results, f)
 
 
