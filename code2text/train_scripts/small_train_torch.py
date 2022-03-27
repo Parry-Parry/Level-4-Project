@@ -1,13 +1,15 @@
 import torch
 import transformers
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, Seq2SeqTrainer
+from transformers import AutoTokenizer, DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, Seq2SeqTrainer
 import datasets
-from datasets import load_dataset
+from datasets import load_dataset, set_caching_enabled
 
 import os
 import pandas as pd 
 import numpy as np 
 import pickle
+
+set_caching_enabled(False)
 
 ### TOKENIZER ###
 
