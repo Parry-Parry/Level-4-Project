@@ -97,7 +97,7 @@ valid_set.set_format(
 
 ### ARGS ###
 
-batch_size = 8
+batch_size = 4
 epochs = 12
 lr = 4e-4
 
