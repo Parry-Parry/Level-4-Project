@@ -101,7 +101,7 @@ valid_set.set_format(
 
 batch_size = 4
 epochs = 12
-lr = 4e-4
+lr = 1e-5
 
 ### CONFIG ###
 
