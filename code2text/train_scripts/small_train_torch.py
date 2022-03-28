@@ -13,7 +13,7 @@ set_caching_enabled(False)
 
 ### TOKENIZER ###
 
-tokenizer = AutoTokenizer.from_pretrained("nyu-mll/roberta-med-small-1M-1")
+tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
 
 ### EVAL METRICS ###
 
