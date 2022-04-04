@@ -14,15 +14,12 @@ BLEU_THRESHOLD = 5.0
 bleu = load_metric("sacrebleu")
 
 langs = ["python", "java"]
-#augment_paths = {'python' : "D:\\PROJECT\\Level-4-Project\\code2text\\augment\\aug.jsonl", 'java' : "D:\PROJECT\Augments\java.jsonl"}
 augment_path = "D:\\PROJECT\\Augments\\aug.jsonl"
 dataset_path = "D:\PROJECT\data\CodeSearchNet\python"
 out_path = "D:\PROJECT\data\CodeSearchNet\\aug_python_bleu_filter"
 filenames = ["train", "test", "valid"]
 
 # LOAD DATA
-
-#augment_frame = {lang : pd.read_json(augment_paths[lang], lines=True) for lang in langs}
 
 dataset_frame = {file : pd.read_json(os.path.join(dataset_path, file + ".jsonl"), lines=True) for file in filenames}
 
@@ -68,6 +65,7 @@ def relevance_augment(row):
         augment_strings = [candidate_scores[score] for score in scores if score > BLEU_THRESHOLD]
 
         for aug in augment_strings:
+            print(row["code"], "  ", row["docstring"], "  ", aug)
             row.docstring += "\n" + aug
         per_block.append(len(augment_strings))
     else:
