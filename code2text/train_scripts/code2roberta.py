@@ -80,9 +80,9 @@ def tokenize_function(set):
 
 ### LOAD DATA ###
 
-train = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/aug_py/train.jsonl")["train"]
-valid = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/aug_py/valid.jsonl")["train"]
-test = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/aug_py/test.jsonl")["train"]
+train = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/clean_py/train.jsonl")["train"]
+valid = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/clean_py/valid.jsonl")["train"]
+test = load_dataset('json', data_files="/users/level4/2393265p/workspace/l4project/data/clean_py/test.jsonl")["train"]
 
 tokenized_train = train.map(tokenize_function, batched=True, remove_columns=train.column_names)
 tokenized_valid = valid.map(tokenize_function, batched=True, remove_columns=valid.column_names)
