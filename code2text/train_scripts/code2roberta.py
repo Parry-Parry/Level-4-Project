@@ -59,10 +59,6 @@ def eval_compute(results):
         "meteor_score" : meteor_output["meteor"]
     }
 
-
-### DATASET PREP ###
-
-
 ### DATASET PREP ###
 
 def tokenize_function(set):
@@ -101,7 +97,7 @@ valid_set.set_format(
 
 batch_size = 4
 epochs = 150
-lr = 5e-6
+lr = 1e-5
 
 ### CONFIG ###
 
